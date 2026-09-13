@@ -17,7 +17,7 @@ jobs:
       - name: Check V53 ZIP
         run: |
           set -e
-          test -f "Business360_V53_FUNCTIONAL_FIX_FINAL(1).zip"
+          test -f "Business360_V53_FUNCTIONAL_FIX_FINAL.zip"
           echo "V53 ZIP found."
 
       - name: Extract V53 project
@@ -25,9 +25,8 @@ jobs:
           set -e
           rm -rf v53_project
           mkdir v53_project
-          unzip -q "Business360_V53_FUNCTIONAL_FIX_FINAL(1).zip" -d v53_project
+          unzip -q "Business360_V53_FUNCTIONAL_FIX_FINAL.zip" -d v53_project
 
-          echo "Searching for Android project..."
           SETTINGS=$(find v53_project -name settings.gradle -o -name settings.gradle.kts | head -n 1)
 
           if [ -z "$SETTINGS" ]; then
@@ -76,12 +75,8 @@ jobs:
       - name: Verify APK
         run: |
           set -e
-
           APK="$PROJECT_DIR/app/build/outputs/apk/debug/app-debug.apk"
-
           test -f "$APK"
-
-          echo "V53 APK created successfully."
           ls -lh "$APK"
           sha256sum "$APK"
 
