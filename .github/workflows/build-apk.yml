@@ -31,10 +31,53 @@ jobs:
           old='const allowed=["purple","blue","green","rose","orange","dark","sky","cream","mint"];'
           new='const allowed=["purple","blue","green","rose","orange","dark","sky","cream","mint","premium","light","ocean","sunset","aurora","forest","gold"];'
           s=s.replace(old,new)
+          theme_fix='''function applyTheme(t, silent=false){
+ const maps={
+  purple:{bg:'#f7f7fb',dash:'purple',panel:'auto',product:'auto'},
+  blue:{bg:'#f5f8ff',dash:'blue',panel:'auto',product:'auto'},
+  green:{bg:'#effcf6',dash:'green',panel:'emerald',product:'green'},
+  rose:{bg:'#fff4f8',dash:'wine',panel:'wine',product:'auto'},
+  orange:{bg:'#fff7ed',dash:'sunset',panel:'gold',product:'auto'},
+  dark:{bg:'#0b0d12',dash:'midnight',panel:'obsidian',product:'black'},
+  sky:{bg:'#eefaff',dash:'blue',panel:'navy',product:'blue'},
+  cream:{bg:'#fffaf0',dash:'warm',panel:'gold',product:'auto'},
+  mint:{bg:'#effcf6',dash:'green',panel:'emerald',product:'green'},
+  premium:{bg:'#f5f0ff',dash:'purple',panel:'plum',product:'purple'},
+  light:{bg:'#f7fbff',dash:'blue',panel:'auto',product:'white'},
+  ocean:{bg:'#e9fbff',dash:'blue',panel:'navy',product:'blue'},
+  sunset:{bg:'#fff1e8',dash:'sunset',panel:'wine',product:'auto'},
+  aurora:{bg:'#f2efff',dash:'aurora',panel:'plum',product:'purple'},
+  forest:{bg:'#eefaf4',dash:'green',panel:'emerald',product:'green'},
+  gold:{bg:'#fff9e8',dash:'warm',panel:'gold',product:'auto'}
+ };
+ if(!maps[t])t='purple';
+ const m=maps[t],root=document.documentElement;
+ root.dataset.theme=t;
+ root.style.setProperty('--bg',m.bg);
+ root.dataset.appbg=t;
+ if(db&&db.settings){
+  db.settings.theme=t;
+  db.settings.appBg=t;
+  db.settings.dashboardBg=m.dash;
+  db.settings.panelBg=m.panel;
+  db.settings.productBg=m.product;
+  try{localStorage.setItem(KEY,JSON.stringify(db));}catch(_){}
+  idbPut(db).catch(()=>{});
+ }
+ if(typeof applyDashboardStyle==='function')applyDashboardStyle();
+ if(typeof applyPanelBg==='function')applyPanelBg(m.panel,true);
+ if(typeof applyProductBg==='function')applyProductBg(m.product,true);
+ if(!silent)toast('অ্যাপের All Theme: '+t);
+}
+'''
+          s2,n=re.subn(r'function applyTheme\(t, silent=false\)\{.*?(?=function openThemePicker)',theme_fix,s,count=1,flags=re.S)
+          if n!=1:
+              raise SystemExit('applyTheme function not found')
+          s=s2
           p.write_text(s,encoding='utf-8')
           g=Path('app/build.gradle'); t=g.read_text(encoding='utf-8')
-          t=re.sub(r'versionCode\s+\d+','versionCode 19',t,count=1)
-          t=re.sub(r"versionName\s+'[^']*'","versionName '1.6.1-stable-build'",t,count=1)
+          t=re.sub(r'versionCode\s+\d+','versionCode 20',t,count=1)
+          t=re.sub(r"versionName\s+'[^']*'","versionName '1.6.2-all-theme-fix'",t,count=1)
           g.write_text(t,encoding='utf-8')
           PY
           mkdir -p app/src/main/assets/themes
@@ -49,9 +92,10 @@ jobs:
         run: |
           set -e
           test -f app/src/main/assets/index.html
-          grep -q 'versionCode 19' app/build.gradle
-          grep -q 'Business360</div>' app/src/main/assets/index.html
-          grep -q 'sw.js?v=55' app/src/main/assets/index.html
+          grep -q 'versionCode 20' app/build.gradle
+          grep -q '1.6.2-all-theme-fix' app/build.gradle
+          grep -q 'root.style.setProperty('\''--bg'\'',m.bg)' app/src/main/assets/index.html
+          grep -q 'db.settings.appBg=t' app/src/main/assets/index.html
           grep -q 'function partyOptions' app/src/main/assets/index.html
           grep -q 'const nextNo' app/src/main/assets/index.html
           grep -q 'function addMove' app/src/main/assets/index.html
@@ -78,6 +122,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Business360-Trial-FINAL-${{ github.run_number }}
+          name: Business360-AllTheme-FIX-${{ github.run_number }}
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
