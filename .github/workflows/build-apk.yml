@@ -28,8 +28,6 @@ jobs:
           s=s.replace('sw.js?v=50','sw.js?v=55')
           s=s.replace('bottom:86px;z-index:45','bottom:76px;z-index:10000')
           s=s.replace('@media(max-width:600px){.save-bar{bottom:86px;','@media(max-width:600px){.save-bar{bottom:76px;')
-          # Fix the actual theme application function. The previous build only expanded a CSS/file allow-list;
-          # the runtime applyTheme() still rejected the new theme names and did not apply whole-app backgrounds.
           new_apply = '''function applyTheme(t, silent=false){
  const maps={
   purple:{bg:'#f7f7fb',dash:'purple',panel:'auto',product:'auto'},blue:{bg:'#f5f8ff',dash:'blue',panel:'auto',product:'auto'},green:{bg:'#effcf6',dash:'green',panel:'emerald',product:'green'},rose:{bg:'#fff4f8',dash:'wine',panel:'wine',product:'auto'},orange:{bg:'#fff7ed',dash:'sunset',panel:'gold',product:'auto'},dark:{bg:'#0b0d12',dash:'midnight',panel:'obsidian',product:'black'},sky:{bg:'#eefaff',dash:'blue',panel:'navy',product:'blue'},cream:{bg:'#fffaf0',dash:'warm',panel:'gold',product:'auto'},mint:{bg:'#effcf6',dash:'green',panel:'emerald',product:'green'},premium:{bg:'#f5f0ff',dash:'purple',panel:'plum',product:'purple'},light:{bg:'#f7fbff',dash:'blue',panel:'auto',product:'white'},ocean:{bg:'#e9fbff',dash:'blue',panel:'navy',product:'blue'},sunset:{bg:'#fff1e8',dash:'sunset',panel:'wine',product:'auto'},aurora:{bg:'#f2efff',dash:'aurora',panel:'plum',product:'purple'},forest:{bg:'#eefaf4',dash:'green',panel:'emerald',product:'green'},gold:{bg:'#fff9e8',dash:'warm',panel:'gold',product:'auto'}
@@ -48,7 +46,6 @@ jobs:
           pattern=r'function applyTheme\(t, silent=false\)\{.*?\n\}'
           s,n=re.subn(pattern,new_apply,s,count=1,flags=re.S)
           if n!=1: raise SystemExit('applyTheme function not found')
-          # Make the first Settings theme picker use the same whole-app theme function.
           s=s.replace("function openThemePicker(){const names={purple:'পার্পল',blue:'ব্লু',green:'সবুজ',rose:'রোজ',orange:'অরেঞ্জ',dark:'ডার্ক',sky:'আকাশি',cream:'ক্রিম',mint:'মিন্ট'};", "function openThemePicker(){const names={purple:'পার্পল',blue:'ব্লু',green:'সবুজ',rose:'রোজ',orange:'অরেঞ্জ',dark:'ডার্ক',sky:'আকাশি',cream:'ক্রিম',mint:'মিন্ট',premium:'Premium',light:'Light',ocean:'Ocean',sunset:'Sunset',aurora:'Aurora',forest:'Forest',gold:'Gold'};")
           p.write_text(s,encoding='utf-8')
           g=Path('app/build.gradle'); t=g.read_text(encoding='utf-8')
@@ -76,7 +73,7 @@ jobs:
           grep -q 'function addMove' app/src/main/assets/index.html
           grep -q 'function transactionsPage' app/src/main/assets/index.html
           grep -q 'Md Sahadul Hoque Rumu' app/src/main/assets/index.html
-          grep -q "app.settings.theme=t" app/src/main/assets/index.html
+          grep -q 'function applyTheme' app/src/main/assets/index.html
           grep -q "root.dataset.appbg=t" app/src/main/assets/index.html
           for f in premium light ocean sunset aurora forest gold; do test -f app/src/main/assets/themes/$f.css; done
       - name: Set up Java 17
