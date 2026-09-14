@@ -35,7 +35,7 @@ jobs:
           echo "ZIP found: $ZIP"
           echo "V53_ZIP=$ZIP" >> "$GITHUB_ENV"
 
-      - name: Extract V53 source
+      - name: Extract V53 project
         run: |
           set -e
 
@@ -49,42 +49,27 @@ jobs:
             | head -n 1)
 
           if [ -z "$SETTINGS" ]; then
-            echo "ERROR: Android project not found."
+            echo "ERROR: settings.gradle not found."
             exit 1
           fi
 
           PROJECT_DIR=$(dirname "$SETTINGS")
 
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-          echo "Project found: $PROJECT_DIR"
+          echo "V53 project found: $PROJECT_DIR"
 
-      - name: Copy V53 source into repository
+      - name: Install V53 source
         run: |
           set -e
 
           rsync -a \
             --exclude='.git/' \
-            --exclude='v53_project/' \
+            --exclude='.github/' \
             "$PROJECT_DIR/" ./
 
-          echo "V53 source copied into repository."
+          rm -rf v53_project
 
-      - name: Commit source to GitHub
-        run: |
-          set -e
-
-          git config user.name "Business360 Build Bot"
-          git config user.email "actions@github.com"
-
-          git add -A
-
-          if git diff --cached --quiet; then
-            echo "No source changes."
-          else
-            git commit -m "Install Business360 V53 source [skip ci]"
-            git push
-            echo "Source committed to GitHub."
-          fi
+          echo "V53 source installed."
 
       - name: Verify source
         run: |
@@ -92,6 +77,7 @@ jobs:
 
           test -f app/build.gradle
           test -f app/src/main/assets/index.html
+          test -f app/src/main/AndroidManifest.xml
           test -f settings.gradle
           test -f build.gradle
 
@@ -104,7 +90,35 @@ jobs:
           grep -q "function transactionsPage" app/src/main/assets/index.html
           grep -q "Md Sahadul Hoque Rumu" app/src/main/assets/index.html
 
-          echo "Business360 V53 source verified."
+          echo "Business360 V53 source verification PASSED."
+
+      - name: Commit source to GitHub
+        run: |
+          set -e
+
+          git config user.name "Business360 Build Bot"
+          git config user.email "actions@github.com"
+
+          git add \
+            app \
+            build.gradle \
+            settings.gradle \
+            gradle.properties \
+            gradle \
+            gradlew \
+            gradlew.bat \
+            business360-debug.keystore \
+            README.md \
+            app.js \
+            2>/dev/null || true
+
+          if git diff --cached --quiet; then
+            echo "No Android source changes to commit."
+          else
+            git commit -m "Install Business360 V53 source [skip ci]"
+            git push
+            echo "Business360 source committed successfully."
+          fi
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -117,8 +131,10 @@ jobs:
         with:
           gradle-version: "8.7"
 
-      - name: Build APK
+      - name: Build Business360 APK
         run: |
+          set -e
+
           gradle --no-daemon clean assembleDebug --stacktrace
 
       - name: Verify APK
@@ -129,7 +145,7 @@ jobs:
 
           test -f "$APK"
 
-          echo "APK created successfully."
+          echo "Business360 APK created successfully."
           ls -lh "$APK"
           sha256sum "$APK"
 
