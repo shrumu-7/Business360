@@ -2,7 +2,8 @@ name: Build Business360 APK
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
 permissions:
   contents: write
 jobs:
@@ -12,31 +13,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Apply All Theme fix
+        shell: bash
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-          p=Path('app/src/main/assets/index.html')
-          s=p.read_text(encoding='utf-8')
-          s=s.replace('const allowed=["purple","blue","green","rose","orange","dark","sky","cream","mint"];','const allowed=["purple","blue","green","rose","orange","dark","sky","cream","mint","premium","light","ocean","sunset","aurora","forest","gold"];')
-          fix='''function applyTheme(t, silent=false){
- const maps={purple:{bg:'#f7f7fb',dash:'purple',panel:'auto',product:'auto'},blue:{bg:'#f5f8ff',dash:'blue',panel:'auto',product:'auto'},green:{bg:'#effcf6',dash:'green',panel:'emerald',product:'green'},rose:{bg:'#fff4f8',dash:'wine',panel:'wine',product:'auto'},orange:{bg:'#fff7ed',dash:'sunset',panel:'gold',product:'auto'},dark:{bg:'#0b0d12',dash:'midnight',panel:'obsidian',product:'black'},sky:{bg:'#eefaff',dash:'blue',panel:'navy',product:'blue'},cream:{bg:'#fffaf0',dash:'warm',panel:'gold',product:'auto'},mint:{bg:'#effcf6',dash:'green',panel:'emerald',product:'green'},premium:{bg:'#f5f0ff',dash:'purple',panel:'plum',product:'purple'},light:{bg:'#f7fbff',dash:'blue',panel:'auto',product:'white'},ocean:{bg:'#e9fbff',dash:'blue',panel:'navy',product:'blue'},sunset:{bg:'#fff1e8',dash:'sunset',panel:'wine',product:'auto'},aurora:{bg:'#f2efff',dash:'aurora',panel:'plum',product:'purple'},forest:{bg:'#eefaf4',dash:'green',panel:'emerald',product:'green'},gold:{bg:'#fff9e8',dash:'warm',panel:'gold',product:'auto'}};
- if(!maps[t])t='purple'; const m=maps[t],root=document.documentElement; root.dataset.theme=t; root.style.setProperty('--bg',m.bg); root.dataset.appbg=t;
- if(db&&db.settings){db.settings.theme=t;db.settings.appBg=t;db.settings.dashboardBg=m.dash;db.settings.panelBg=m.panel;db.settings.productBg=m.product;try{localStorage.setItem(KEY,JSON.stringify(db));}catch(_){} idbPut(db).catch(()=>{});}
- if(typeof applyDashboardStyle==='function')applyDashboardStyle(); if(typeof applyPanelBg==='function')applyPanelBg(m.panel,true); if(typeof applyProductBg==='function')applyProductBg(m.product,true); if(!silent)toast('অ্যাপের All Theme: '+t);
-}
-'''
-          s,n=re.subn(r'function applyTheme\(t, silent=false\)\{.*?(?=function openThemePicker)',fix,s,count=1,flags=re.S)
-          if n!=1: raise SystemExit('applyTheme not found')
-          p.write_text(s,encoding='utf-8')
-          g=Path('app/build.gradle'); t=g.read_text(); t=re.sub(r'versionCode\s+\d+','versionCode 20',t,count=1); t=re.sub(r"versionName\s+'[^']*'","versionName '1.6.2-all-theme-fix'",t,count=1); g.write_text(t)
-          PY
+          set -e
+          python3 -c "from pathlib import Path;import base64; p=Path('app/src/main/assets/index.html'); s=p.read_text(encoding='utf-8'); a=s.index('function applyTheme(t, silent=false){'); b=s.index('function page(',a); r=base64.b64decode('ZnVuY3Rpb24gYXBwbHlUaGVtZSh0LCBzaWxlbnQ9ZmFsc2UpewogY29uc3QgYWxsb3dlZD1bJ3B1cnBsZScsJ2JsdWUnLCdncmVlbicsJ3Jvc2UnLCdvcmFuZ2UnLCdkYXJrJywnc2t5JywnY3JlYW0nLCdtaW50JywncHJlbWl1bScsJ2xpZ2h0Jywnb2NlYW4nLCdzdW5zZXQnLCdhdXJvcmEnLCdmb3Jlc3QnLCdnb2xkJ107CiBjb25zdCBtYXBzPXtwdXJwbGU6J2JsdWVXaGl0ZScsYmx1ZTonYmx1ZVdoaXRlJyxncmVlbjonbWludCcscm9zZToncm9zZScsb3JhbmdlOidzdW5yaXNlJyxkYXJrOidtaWRuaWdodCcsc2t5OidpY2UnLGNyZWFtOidwYXBlcicsbWludDonbWludCcscHJlbWl1bTonc29mdFB1cnBsZScsbGlnaHQ6J2JsdWVXaGl0ZScsb2NlYW46J29jZWFuJyxzdW5zZXQ6J3N1bnNldCcsYXVyb3JhOidhdXJvcmFHbG93Jyxmb3Jlc3Q6J2ZvcmVzdCcsZ29sZDond2FybSd9OwogaWYoIWFsbG93ZWQuaW5jbHVkZXModCkpdD0ncHVycGxlJzsKIGRvY3VtZW50LmRvY3VtZW50RWxlbWVudC5kYXRhc2V0LnRoZW1lPXQ7CiBpZihkYiYmZGIuc2V0dGluZ3Mpe2RiLnNldHRpbmdzLnRoZW1lPXQ7c2F2ZSgpO30KIGFwcGx5QXBwQmFja2dyb3VuZChtYXBzW3RdLHRydWUpOwogaWYoIXNpbGVudCl0b2FzdCgn4KaF4KeN4Kav4Ka+4Kaq4KeH4KawIEFsbCBUaGVtZTogJyt0KTsKfQo=').decode(); p.write_text(s[:a]+r+s[b:],encoding='utf-8'); g=Path('app/build.gradle'); t=g.read_text(); import re; t=re.sub(r'versionCode\\s+\\d+','versionCode 20',t,count=1); t=re.sub(r\"versionName\\s+'[^']*'\",\"versionName '1.6.2-all-theme-fix'\",t,count=1); g.write_text(t)"
       - name: Verify source
+        shell: bash
         run: |
+          set -e
           grep -q "versionCode 20" app/build.gradle
           grep -q "1.6.2-all-theme-fix" app/build.gradle
-          grep -q "root.style.setProperty('--bg',m.bg)" app/src/main/assets/index.html
-          grep -q "db.settings.appBg=t" app/src/main/assets/index.html
+          grep -q "applyAppBackground(maps\[t\],true)" app/src/main/assets/index.html
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -47,7 +34,13 @@ jobs:
         with:
           gradle-version: '8.7'
       - name: Build APK
-        run: gradle --no-daemon clean assembleDebug
+        run: gradle --no-daemon clean assembleDebug --stacktrace
+      - name: Verify APK
+        shell: bash
+        run: |
+          set -e
+          test -f app/build/outputs/apk/debug/app-debug.apk
+          ls -lh app/build/outputs/apk/debug/app-debug.apk
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
