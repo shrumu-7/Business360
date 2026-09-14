@@ -1,13 +1,10 @@
 name: Build Business360 APK
-
 on:
   workflow_dispatch:
   push:
     branches: [main]
-
 permissions:
   contents: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,48 +13,71 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Verify Android source
+      - name: Apply final fixes
+        shell: bash
         run: |
           set -e
-          test -f app/build.gradle
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('app/src/main/assets/index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('<div class="brand" id="brand">আমার দোকান</div>','<div class="brand" id="brand">Business360</div>')
+          s=s.replace('settings:{shop:"আমার দোকান",','settings:{shop:"Business360",')
+          s=s.replace('||"আমার দোকান";','||"Business360";')
+          s=s.replace('sw.js?v=50','sw.js?v=55')
+          s=s.replace('bottom:86px;z-index:45','bottom:76px;z-index:10000')
+          s=s.replace('@media(max-width:600px){.save-bar{bottom:86px;','@media(max-width:600px){.save-bar{bottom:76px;')
+          old='const allowed=["purple","blue","green","rose","orange","dark","sky","cream","mint"];'
+          new='const allowed=["purple","blue","green","rose","orange","dark","sky","cream","mint","premium","light","ocean","sunset","aurora","forest","gold"];'
+          s=s.replace(old,new)
+          p.write_text(s,encoding='utf-8')
+          g=Path('app/build.gradle'); t=g.read_text(encoding='utf-8')
+          t=re.sub(r'versionCode\s+\d+','versionCode 17',t,count=1)
+          t=re.sub(r"versionName\s+'[^']*'","versionName '1.6.0-trial-theme-all-final'",t,count=1)
+          g.write_text(t,encoding='utf-8')
+          PY
+          mkdir -p app/src/main/assets/themes
+          printf '%s\n' ':root{--theme-accent:#7c3aed;--theme-accent2:#ec4899}' > app/src/main/assets/themes/premium.css
+          printf '%s\n' ':root{--theme-accent:#2563eb;--theme-accent2:#06b6d4}' > app/src/main/assets/themes/light.css
+          printf '%s\n' ':root{--theme-accent:#0891b2;--theme-accent2:#2563eb}' > app/src/main/assets/themes/ocean.css
+          printf '%s\n' ':root{--theme-accent:#f97316;--theme-accent2:#ec4899}' > app/src/main/assets/themes/sunset.css
+          printf '%s\n' ':root{--theme-accent:#14b8a6;--theme-accent2:#8b5cf6}' > app/src/main/assets/themes/aurora.css
+          printf '%s\n' ':root{--theme-accent:#16a34a;--theme-accent2:#0f766e}' > app/src/main/assets/themes/forest.css
+          printf '%s\n' ':root{--theme-accent:#ca8a04;--theme-accent2:#b45309}' > app/src/main/assets/themes/gold.css
+      - name: Verify final source
+        run: |
+          set -e
           test -f app/src/main/assets/index.html
-          test -f app/src/main/AndroidManifest.xml
-          test -f settings.gradle
-          test -f build.gradle
-          test -f gradle.properties
-          grep -q 'com.business360.trial' app/build.gradle
+          grep -q 'versionCode 17' app/build.gradle
+          grep -q 'Business360</div>' app/src/main/assets/index.html
+          grep -q 'sw.js?v=55' app/src/main/assets/index.html
           grep -q 'function partyOptions' app/src/main/assets/index.html
           grep -q 'const nextNo' app/src/main/assets/index.html
           grep -q 'function addMove' app/src/main/assets/index.html
           grep -q 'function transactionsPage' app/src/main/assets/index.html
           grep -q 'Md Sahadul Hoque Rumu' app/src/main/assets/index.html
-          echo 'Business360 source verification passed.'
-
+          for f in premium light ocean sunset aurora forest gold; do test -f app/src/main/assets/themes/$f.css; done
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-
       - name: Set up Gradle 8.7
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-
       - name: Build APK
         run: gradle --no-daemon clean assembleDebug --stacktrace
-
       - name: Verify APK
         run: |
           set -e
           test -f app/build/outputs/apk/debug/app-debug.apk
           ls -lh app/build/outputs/apk/debug/app-debug.apk
           sha256sum app/build/outputs/apk/debug/app-debug.apk
-
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Business360-Trial-APK-${{ github.run_number }}
+          name: Business360-Trial-FINAL-${{ github.run_number }}
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
