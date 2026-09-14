@@ -1,0 +1,18 @@
+name: business360
+version: 2.0.0+1
+description: Business360 - cross-platform business management app
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  shared_preferences: ^2.3.2
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/branding/business360_logo.png
