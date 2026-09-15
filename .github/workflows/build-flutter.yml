@@ -29,6 +29,9 @@ jobs:
       - name: Flutter version
         run: flutter --version
 
+      - name: Generate Android platform
+        run: flutter create --platforms=android --project-name business360 .
+
       - name: Get dependencies
         run: flutter pub get
 
