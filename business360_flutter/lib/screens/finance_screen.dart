@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+
 import '../models/business_models.dart';
 import '../services/business_store.dart';
 
 class FinanceScreen extends StatefulWidget {
   const FinanceScreen({super.key, required this.store});
+
   final BusinessStore store;
 
   @override
@@ -12,6 +14,8 @@ class FinanceScreen extends StatefulWidget {
 
 class _FinanceScreenState extends State<FinanceScreen> {
   int tab = 0;
+
+  String get currency => widget.store.prefs.getString('currency') ?? '৳';
 
   void addExpense() {
     final title = TextEditingController();
@@ -97,10 +101,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                     padding: const EdgeInsets.only(bottom: 10),
                     child: TextField(
                       controller: controllers[i],
-                      keyboardType: i == 0 ||
-                              labels[i] == 'Note' ||
-                              labels[i] == 'Supplier' ||
-                              labels[i] == 'Title'
+                      keyboardType: i == 0 || labels[i] == 'Note'
                           ? TextInputType.text
                           : const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
@@ -174,7 +175,9 @@ class _FinanceScreenState extends State<FinanceScreen> {
                             leading: const Icon(Icons.money_off),
                             title: Text(expense.title),
                             subtitle: Text(expense.date.toString().split('.').first),
-                            trailing: Text('৳${expense.amount.toStringAsFixed(2)}'),
+                            trailing: Text(
+                              '$currency${expense.amount.toStringAsFixed(2)}',
+                            ),
                           ),
                         ),
                       ),
@@ -193,9 +196,11 @@ class _FinanceScreenState extends State<FinanceScreen> {
                             leading: const Icon(Icons.shopping_cart),
                             title: Text(purchase.supplier),
                             subtitle: Text(
-                              'Paid ৳${purchase.paid.toStringAsFixed(2)} • Due ৳${purchase.due.toStringAsFixed(2)}',
+                              'Paid $currency${purchase.paid.toStringAsFixed(2)} • Due $currency${purchase.due.toStringAsFixed(2)}',
                             ),
-                            trailing: Text('৳${purchase.amount.toStringAsFixed(2)}'),
+                            trailing: Text(
+                              '$currency${purchase.amount.toStringAsFixed(2)}',
+                            ),
                           ),
                         ),
                       ),
@@ -221,7 +226,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
           children: [
             Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
             Text(
-              '৳${value.toStringAsFixed(2)}',
+              '$currency${value.toStringAsFixed(2)}',
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ],
