@@ -1,4 +1,4 @@
-name: Build Business360 Flutter APK
+name: Build Business360 Flutter Package
 
 on:
   workflow_dispatch:
@@ -38,18 +38,42 @@ jobs:
       - name: Analyze Dart source
         run: flutter analyze lib --no-fatal-infos --no-fatal-warnings
 
-      - name: Build release APK
-        run: flutter build apk --release
+      - name: Run Flutter tests
+        run: flutter test
 
-      - name: Verify APK
+      - name: Build optimized Android APKs
+        run: flutter build apk --release --split-per-abi
+
+      - name: Build Android App Bundle
+        run: flutter build appbundle --release
+
+      - name: Verify Android artifacts
         run: |
           set -e
-          test -s build/app/outputs/flutter-apk/app-release.apk
-          ls -lh build/app/outputs/flutter-apk/app-release.apk
+          test -s build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+          test -s build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          test -s build/app/outputs/flutter-apk/app-x86_64-release.apk
+          test -s build/app/outputs/bundle/release/app-release.aab
+          ls -lh build/app/outputs/flutter-apk/*.apk
+          ls -lh build/app/outputs/bundle/release/app-release.aab
 
-      - name: Upload APK
+      - name: Package complete Flutter project
+        working-directory: .
+        run: |
+          set -e
+          zip -r Business360-Flutter-Project-${{ github.run_number }}.zip business360_flutter \
+            -x 'business360_flutter/.dart_tool/*' \
+               'business360_flutter/build/*' \
+               'business360_flutter/.git/*'
+
+      - name: Upload complete package
         uses: actions/upload-artifact@v4
         with:
-          name: Business360-Flutter-APK-${{ github.run_number }}
-          path: business360_flutter/build/app/outputs/flutter-apk/app-release.apk
+          name: Business360-Flutter-Package-${{ github.run_number }}
+          path: |
+            Business360-Flutter-Project-${{ github.run_number }}.zip
+            business360_flutter/build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+            business360_flutter/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            business360_flutter/build/app/outputs/flutter-apk/app-x86_64-release.apk
+            business360_flutter/build/app/outputs/bundle/release/app-release.aab
           if-no-files-found: error
