@@ -43,7 +43,9 @@ class _SalesScreenState extends State<SalesScreen> {
     }
     final sale = Sale(id: DateTime.now().microsecondsSinceEpoch.toString(), date: DateTime.now(), total: total, paid: paid, customerId: customerId, items: items);
     sales.add(sale);
-    if (customerId.isNotEmpty && sale.due > 0) customers.firstWhere((x) => x.id == customerId).due += sale.due;
+    if (customerId.isNotEmpty && sale.due > 0) {
+      customers.firstWhere((x) => x.id == customerId).due += sale.due;
+    }
     await widget.store.saveProducts(products);
     await widget.store.saveSales(sales);
     await widget.store.saveCustomers(customers);
@@ -65,7 +67,7 @@ class _SalesScreenState extends State<SalesScreen> {
         ]))),
       ]))),
       Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
-        DropdownButtonFormField<String>(value: customerId.isEmpty ? null : customerId, decoration: const InputDecoration(labelText: 'Customer (optional)'), items: [const DropdownMenuItem(value: '', child: Text('Walk-in customer')), ...customers.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))], onChanged: (v) => setState(() => customerId = v ?? '')),
+        DropdownButtonFormField<String>(initialValue: customerId.isEmpty ? null : customerId, decoration: const InputDecoration(labelText: 'Customer (optional)'), items: [const DropdownMenuItem(value: '', child: Text('Walk-in customer')), ...customers.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))], onChanged: (v) => setState(() => customerId = v ?? '')),
         const SizedBox(height: 12), TextField(controller: paidController, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Paid amount', prefixText: '৳ ')),
         const SizedBox(height: 16), Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('TOTAL', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)), Text('৳${total.toStringAsFixed(2)}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold))]),
         const SizedBox(height: 6), Align(alignment: Alignment.centerRight, child: Text('Estimated profit: ৳${cartProfit.toStringAsFixed(2)}')),
