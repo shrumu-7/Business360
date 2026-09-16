@@ -29,6 +29,8 @@ jobs:
         run: flutter --version
       - name: Generate Android and iOS platforms
         run: flutter create --platforms=android,ios --project-name business360 .
+      - name: Remove generated default test
+        run: rm -f test/widget_test.dart
       - name: Get dependencies
         run: flutter pub get
       - name: Analyze Dart source
