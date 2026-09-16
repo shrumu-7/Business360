@@ -32,6 +32,7 @@ class AllThemeScreen extends StatelessWidget {
     await prefs.setString('dashboardBg', data['dash'] as String);
     await prefs.setString('dashboardCardBg', key == 'dark' ? 'glass' : 'gradient');
     await prefs.setString('dashboardBorder', key == 'dark' ? 'glow' : 'normal');
+    await prefs.setBool('dark_mode', key == 'dark');
     onApplied();
     if (context.mounted) Navigator.pop(context);
   }
