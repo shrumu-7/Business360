@@ -29,6 +29,14 @@ jobs:
         run: flutter --version
       - name: Generate Android and iOS platforms
         run: flutter create --platforms=android,ios --project-name business360 .
+      - name: Apply Business360 launcher icon
+        run: |
+          set -e
+          test -s ../app/src/main/assets/branding/business360_logo.png
+          mkdir -p android/app/src/main/res/drawable
+          cp ../app/src/main/assets/branding/business360_logo.png android/app/src/main/res/drawable/business360_logo.png
+          sed -i 's#android:icon="@mipmap/ic_launcher"#android:icon="@drawable/business360_logo"#' android/app/src/main/AndroidManifest.xml
+          grep -q 'android:icon="@drawable/business360_logo"' android/app/src/main/AndroidManifest.xml
       - name: Remove generated default test
         run: rm -f test/widget_test.dart
       - name: Get dependencies
