@@ -12,18 +12,44 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Apply All Theme fix
+      - name: Restore All Theme and About icons
         shell: bash
         run: |
           set -e
-          python3 -c "from pathlib import Path;import base64; p=Path('app/src/main/assets/index.html'); s=p.read_text(encoding='utf-8'); a=s.index('function applyTheme(t, silent=false){'); b=s.index('function page(',a); r=base64.b64decode('ZnVuY3Rpb24gYXBwbHlUaGVtZSh0LCBzaWxlbnQ9ZmFsc2UpewogY29uc3QgYWxsb3dlZD1bJ3B1cnBsZScsJ2JsdWUnLCdncmVlbicsJ3Jvc2UnLCdvcmFuZ2UnLCdkYXJrJywnc2t5JywnY3JlYW0nLCdtaW50JywncHJlbWl1bScsJ2xpZ2h0Jywnb2NlYW4nLCdzdW5zZXQnLCdhdXJvcmEnLCdmb3Jlc3QnLCdnb2xkJ107CiBjb25zdCBtYXBzPXtwdXJwbGU6J2JsdWVXaGl0ZScsYmx1ZTonYmx1ZVdoaXRlJyxncmVlbjonbWludCcscm9zZToncm9zZScsb3JhbmdlOidzdW5yaXNlJyxkYXJrOidtaWRuaWdodCcsc2t5OidpY2UnLGNyZWFtOidwYXBlcicsbWludDonbWludCcscHJlbWl1bTonc29mdFB1cnBsZScsbGlnaHQ6J2JsdWVXaGl0ZScsb2NlYW46J29jZWFuJyxzdW5zZXQ6J3N1bnNldCcsYXVyb3JhOidhdXJvcmFHbG93Jyxmb3Jlc3Q6J2ZvcmVzdCcsZ29sZDond2FybSd9OwogaWYoIWFsbG93ZWQuaW5jbHVkZXModCkpdD0ncHVycGxlJzsKIGRvY3VtZW50LmRvY3VtZW50RWxlbWVudC5kYXRhc2V0LnRoZW1lPXQ7CiBpZihkYiYmZGIuc2V0dGluZ3Mpe2RiLnNldHRpbmdzLnRoZW1lPXQ7c2F2ZSgpO30KIGFwcGx5QXBwQmFja2dyb3VuZChtYXBzW3RdLHRydWUpOwogaWYoIXNpbGVudCl0b2FzdCgn4KaF4KeN4Kav4Ka+4Kaq4KeH4KawIEFsbCBUaGVtZTogJyt0KTsKfQo=').decode(); p.write_text(s[:a]+r+s[b:],encoding='utf-8'); g=Path('app/build.gradle'); t=g.read_text(); import re; t=re.sub(r'versionCode\\s+\\d+','versionCode 20',t,count=1); t=re.sub(r\"versionName\\s+'[^']*'\",\"versionName '1.6.2-all-theme-fix'\",t,count=1); g.write_text(t)"
-      - name: Verify source
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('app/src/main/assets/index.html')
+          s=p.read_text(encoding='utf-8')
+          old='''<button class="btn" onclick="openThemePicker()">🎨 থিম পরিবর্তন</button>'''
+          new='''<div class="toolbar"><button class="btn" onclick="openThemePicker()">🎨 থিম পরিবর্তন</button><button class="btn secondary" onclick="openThemePicker()">🎨 All Theme</button></div>'''
+          if old in s:
+              s=s.replace(old,new,1)
+          elif '🎨 All Theme' not in s:
+              raise SystemExit('Settings theme button not found')
+          old_contact='''<div class="sub" style="margin-top:6px">WhatsApp: 01795934394 · Email: shrumu7@gmail.com</div>'''
+          new_contact='''<div class="sub about-contact" style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap"><a href="https://wa.me/8801795934394" style="text-decoration:none;color:inherit">🟢 <b>WhatsApp</b> · 01795934394</a><a href="mailto:shrumu7@gmail.com" style="text-decoration:none;color:inherit">✉️ <b>Gmail</b> · shrumu7@gmail.com</a></div>'''
+          if old_contact in s:
+              s=s.replace(old_contact,new_contact,1)
+          elif 'about-contact' not in s:
+              raise SystemExit('About contact row not found')
+          p.write_text(s,encoding='utf-8')
+          g=Path('app/build.gradle')
+          t=g.read_text(encoding='utf-8')
+          t=re.sub(r'versionCode\s+\d+','versionCode 21',t,count=1)
+          t=re.sub(r"versionName\s+'[^']*'","versionName '1.6.3-ui-fix'",t,count=1)
+          g.write_text(t,encoding='utf-8')
+          PY
+      - name: Verify source fixes
         shell: bash
         run: |
           set -e
-          grep -q "versionCode 20" app/build.gradle
-          grep -q "1.6.2-all-theme-fix" app/build.gradle
-          grep -q "applyAppBackground(maps\[t\],true)" app/src/main/assets/index.html
+          grep -q '🎨 All Theme' app/src/main/assets/index.html
+          grep -q '🟢 <b>WhatsApp</b>' app/src/main/assets/index.html
+          grep -q '✉️ <b>Gmail</b>' app/src/main/assets/index.html
+          grep -q 'versionCode 21' app/build.gradle
+          grep -q '1.6.3-ui-fix' app/build.gradle
+          grep -q 'applyAppBackground(maps\[t\],true)' app/src/main/assets/index.html
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
