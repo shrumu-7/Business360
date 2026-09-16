@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - 'flutter-**'
 
 permissions:
   contents: read
@@ -18,35 +19,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.47.2'
           channel: stable
           cache: true
-
       - name: Flutter version
         run: flutter --version
-
       - name: Generate Android and iOS platforms
         run: flutter create --platforms=android,ios --project-name business360 .
-
       - name: Get dependencies
         run: flutter pub get
-
       - name: Analyze Dart source
         run: flutter analyze lib --no-fatal-infos --no-fatal-warnings
-
       - name: Run Flutter tests
         run: flutter test
-
-      - name: Build size-optimized Android APKs
+      - name: Build Android APKs
         run: flutter build apk --release --split-per-abi
-
       - name: Build Android App Bundle
         run: flutter build appbundle --release
-
       - name: Verify Android artifacts
         run: |
           set -e
@@ -54,12 +46,8 @@ jobs:
           test -s build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
           test -s build/app/outputs/flutter-apk/app-x86_64-release.apk
           test -s build/app/outputs/bundle/release/app-release.aab
-          echo "Release APK sizes:"
           ls -lh build/app/outputs/flutter-apk/*.apk
-          echo "Recommended Android APK: arm64-v8a (smallest production target for modern phones)"
-          echo "App Bundle: Google Play will deliver only the required native ABI/resources."
           ls -lh build/app/outputs/bundle/release/app-release.aab
-
       - name: Package complete Flutter project
         working-directory: .
         run: |
@@ -68,7 +56,6 @@ jobs:
             -x 'business360_flutter/.dart_tool/*' \
                'business360_flutter/build/*' \
                'business360_flutter/.git/*'
-
       - name: Upload complete package
         uses: actions/upload-artifact@v4
         with:
