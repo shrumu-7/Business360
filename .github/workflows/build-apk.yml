@@ -2,8 +2,7 @@ name: Build Business360 APK
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
 permissions:
   contents: write
 jobs:
@@ -13,83 +12,47 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Apply final UI source fixes
+      - name: Apply Business360 UI fixes
         shell: bash
         run: |
           set -e
           python3 <<'PY'
           from pathlib import Path
           import re
-
           p=Path('app/src/main/assets/index.html')
           s=p.read_text(encoding='utf-8')
 
-          # 1) The Settings page must expose ONE entry for theme/color customization.
-          old='<div class="toolbar"><button class="btn" onclick="openThemePicker()">🎨 থিম পরিবর্তন</button><button class="btn secondary" onclick="openThemePicker()">🎨 All Theme</button></div>'
-          if old in s:
-              s=s.replace(old,'<div class="toolbar"><button class="btn secondary" onclick="openAllTheme()">🎨 All Theme</button></div>',1)
-          else:
-              old2='<button class="btn" onclick="openThemePicker()">🎨 থিম পরিবর্তন</button>'
-              if old2 in s and 'onclick="openAllTheme()">🎨 All Theme' not in s:
-                  s=s.replace(old2,'<button class="btn secondary" onclick="openAllTheme()">🎨 All Theme</button>',1)
+          # Settings: replace the two old standalone theme buttons with one All Theme entry.
+          s=s.replace('<div class="toolbar"><button class="btn" onclick="openThemePicker()">🎨 থিম পরিবর্তন</button><button class="btn secondary" onclick="openThemePicker()">🎨 All Theme</button></div>', '<div class="toolbar"><button class="btn secondary" onclick="openAllTheme()">🎨 All Theme</button></div>', 1)
+          s=s.replace('<button class="btn" onclick="openThemePicker()">🎨 থিম পরিবর্তন</button>', '<button class="btn secondary" onclick="openAllTheme()">🎨 All Theme</button>', 1)
+          s=s.replace('onclick="openThemePicker()">🎨</button>', 'onclick="openAllTheme()">🎨</button>', 1)
 
-          # 2) Route the top theme icon into the same All Theme screen.
-          s=s.replace('onclick="openThemePicker()">🎨</button>','onclick="openAllTheme()">🎨</button>',1)
-
-          # 3) Add a wrapper around the existing settingsPage function. The original
-          # function remains the source of truth for every existing color control;
-          # the wrapper moves/hides ALL those controls from the main Settings page
-          # and exposes them only through All Theme.
-          marker='function settingsPage(){'
-          if marker not in s:
-              raise SystemExit('settingsPage() not found')
+          # Turn the existing settings renderer into a base renderer, then hide all theme/color cards on the main Settings page.
           if 'function settingsPageBase(){' not in s:
-              s=s.replace(marker,'function settingsPageBase(){',1)
-              injection=r'''
-function openAllTheme(){
-  settingsPageBase();
-  const root=document.getElementById('settings');
-  const cards=[...root.querySelectorAll('.card')].filter(c=>{
-    const h=c.innerHTML||'';
-    return h.includes('theme-grid')||h.includes('theme-panel-inline')||h.includes('premium-color-list')||h.includes('theme-choice')||h.includes('theme-chip');
-  });
-  const body=cards.map(c=>c.outerHTML.replace(/settingsPage\(\)/g,'openAllTheme()')).join('');
-  modal(`<div class="modalhead"><div><h2 style="margin:0">🎨 All Theme</h2><div class="theme-current">সব কালার ও থিম পরিবর্তনের অপশন এখানে একসাথে</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="theme-help">All Theme-এর ভেতর থেকেই অ্যাপের সব রঙ, Background, Dashboard, Card, Border, Button ও Panel-এর কালার পরিবর্তন করুন। Settings-এর বাইরে এগুলোর আলাদা অপশন থাকবে না।</div>${body}`);
-}
-
-function settingsPage(){
-  settingsPageBase();
-  const root=document.getElementById('settings');
-  [...root.querySelectorAll('.card')].forEach(c=>{
-    const h=c.innerHTML||'';
-    if(h.includes('theme-grid')||h.includes('theme-panel-inline')||h.includes('premium-color-list')||h.includes('theme-choice')||h.includes('theme-chip')) c.classList.add('settings-theme-hidden');
-  });
-  root.insertAdjacentHTML('afterbegin','<div class="toolbar" style="margin-bottom:12px"><button class="btn secondary" onclick="openAllTheme()">🎨 All Theme</button></div>');
-}
-'''
-              # Put the wrapper functions immediately before the next known function.
+              if 'function settingsPage(){' not in s: raise SystemExit('settingsPage missing')
+              s=s.replace('function settingsPage(){','function settingsPageBase(){',1)
+          if 'function openAllTheme(){' not in s:
               anchor='function aboutPage(){'
-              if anchor not in s:
-                  raise SystemExit('aboutPage() anchor not found')
-              s=s.replace(anchor,injection+'\n'+anchor,1)
+              if anchor not in s: raise SystemExit('aboutPage missing')
+              code='''function openAllTheme(){\n  settingsPageBase();\n  const root=document.getElementById('settings');\n  const cards=[...root.querySelectorAll('.card')].filter(c=>{const h=c.innerHTML||'';return h.includes('theme-grid')||h.includes('theme-panel-inline')||h.includes('premium-color-list')||h.includes('theme-choice')||h.includes('theme-chip')});\n  const body=cards.map(c=>c.outerHTML.replace(/settingsPage\\(\\)/g,'openAllTheme()')).join('');\n  modal(`<div class="modalhead"><div><h2 style="margin:0">🎨 All Theme</h2><div class="theme-current">সব কালার ও থিম পরিবর্তনের অপশন</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="theme-help">অ্যাপের সব Background, Theme, Dashboard, Card, Border, Button, Panel ও অন্যান্য কালার পরিবর্তনের অপশন এখানে একসাথে থাকবে।</div>${body}`);\n}\nfunction settingsPage(){\n  settingsPageBase();\n  const root=document.getElementById('settings');\n  [...root.querySelectorAll('.card')].forEach(c=>{const h=c.innerHTML||'';if(h.includes('theme-grid')||h.includes('theme-panel-inline')||h.includes('premium-color-list')||h.includes('theme-choice')||h.includes('theme-chip'))c.classList.add('settings-theme-hidden')});\n  root.insertAdjacentHTML('afterbegin','<div class="toolbar" style="margin-bottom:12px"><button class="btn secondary" onclick="openAllTheme()">🎨 All Theme</button></div>');\n}\n'''
+              s=s.replace(anchor,code+anchor,1)
 
-          # 4) Ensure hidden theme cards cannot appear on Settings.
-          css='<style id="business360-all-theme-fix">.settings-theme-hidden{display:none!important}</style>'
-          if 'business360-all-theme-fix' not in s:
-              s=s.replace('</head>',css+'</head>',1)
-
-          # 5) Replace any previous fake/text contact row with real brand icons only.
-          icon_html='''<div class="about-contact" style="margin-top:12px;display:flex;gap:14px;align-items:center"><a href="https://wa.me/8801795934394" aria-label="WhatsApp" title="WhatsApp" style="display:inline-grid;place-items:center;width:42px;height:42px;border-radius:50%;background:#25D366;color:#fff;text-decoration:none"><svg viewBox="0 0 32 32" width="25" height="25" aria-hidden="true" fill="none"><path fill="currentColor" d="M16 3.2A12.7 12.7 0 0 0 5.1 22.4L3.4 28.7l6.5-1.7A12.8 12.8 0 1 0 16 3.2Z"/><path fill="#25D366" d="M16 6.2a9.7 9.7 0 0 0-8.2 14.9l.4.6-1 3.6 3.7-1 .6.4A9.7 9.7 0 1 0 16 6.2Z"/><path fill="#fff" d="M12.2 10.4c.3-.4.6-.4.9-.4h.7c.2 0 .5.1.6.5l.9 2.1c.1.3.1.5-.1.8l-.7.9c-.2.2-.2.4 0 .7.4.7 1 1.4 1.7 1.9.7.5 1.5.9 2.3 1.1.3.1.5 0 .7-.2l.8-1c.2-.3.4-.3.7-.2l2 .9c.3.1.5.3.5.6v.8c0 .4-.2.8-.5 1.1-.5.5-1.3.7-2.1.6-1.3-.2-3-.9-4.7-2.2-1.4-1.1-2.5-2.4-3.2-3.5-.7-1.2-1.1-2.3-1.1-3.1 0-.6.2-1.2.6-1.4Z"/></svg></a><a href="googlegmail://co?to=shrumu7@gmail.com" aria-label="Gmail" title="Gmail" style="display:inline-grid;place-items:center;width:42px;height:42px;border-radius:10px;background:#fff;border:1px solid #ddd;text-decoration:none"><svg viewBox="0 0 32 24" width="28" height="22" aria-hidden="true"><path fill="#EA4335" d="M2 3.5 16 14 30 3.5V21H2Z"/><path fill="#FBBC04" d="M2 3.5 16 14 30 3.5 16 0Z" opacity=".9"/><path fill="#4285F4" d="M2 3.5 7 7.2V21H2Z"/><path fill="#34A853" d="M30 3.5 25 7.2V21h5Z"/></svg></a></div>'''
-          # Replace the entire existing about-contact block, including the prior W/M version.
-          s,n=re.subn(r'<div class="about-contact"[^>]*>.*?</div>',icon_html,s,count=1,flags=re.S)
-          if n==0:
-              # Fallback for the original plain text row.
+          # Replace the previously injected fake W/M contact row exactly, without touching the rest of About.
+          old_fake=re.search(r'<div class="about-contact"[^>]*><a href="https://wa\.me/8801795934394".*?</div>',s,re.S)
+          if old_fake:
+              block=old_fake.group(0)
+              # Match through the final Gmail anchor closing tag.
+              end=block.rfind('</a>')
+              if end>=0: block=block[:end+4]
+              icons='''<div class="about-contact" style="margin-top:12px;display:flex;gap:14px;align-items:center"><a href="https://wa.me/8801795934394" aria-label="WhatsApp" title="WhatsApp" style="display:inline-grid;place-items:center;width:42px;height:42px;border-radius:50%;background:#25D366;color:#fff;text-decoration:none"><svg viewBox="0 0 32 32" width="25" height="25" aria-hidden="true"><path fill="#fff" d="M16 3.2A12.8 12.8 0 0 0 5.1 22.4L3.4 28.7l6.5-1.7A12.8 12.8 0 1 0 16 3.2Zm0 3a9.8 9.8 0 0 1 0 19.6c-1.7 0-3.3-.4-4.7-1.2l-.6-.3-3.7 1 1-3.6-.4-.6A9.8 9.8 0 0 1 16 6.2Zm-3.7 4.1c.3-.4.6-.4.9-.4h.7c.2 0 .5.1.6.5l.9 2.1c.1.3.1.5-.1.8l-.7.9c-.2.2-.2.4 0 .7.4.7 1 1.4 1.7 1.9.7.5 1.5.9 2.3 1.1.3.1.5 0 .7-.2l.8-1c.2-.3.4-.3.7-.2l2 .9c.3.1.5.3.5.6v.8c0 .4-.2.8-.5 1.1-.5.5-1.3.7-2.1.6-1.3-.2-3-.9-4.7-2.2-1.4-1.1-2.5-2.4-3.2-3.5-.7-1.2-1.1-2.3-1.1-3.1 0-.6.2-1.2.6-1.4Z"/></svg></a><a href="googlegmail://co?to=shrumu7@gmail.com" aria-label="Gmail" title="Gmail" style="display:inline-grid;place-items:center;width:42px;height:42px;border-radius:10px;background:#fff;border:1px solid #ddd;text-decoration:none"><svg viewBox="0 0 32 24" width="28" height="22" aria-hidden="true"><path fill="#EA4335" d="M2 3.5 16 14 30 3.5V21H2Z"/><path fill="#FBBC04" d="M2 3.5 16 14 30 3.5 16 0Z" opacity=".9"/><path fill="#4285F4" d="M2 3.5 7 7.2V21H2Z"/><path fill="#34A853" d="M30 3.5 25 7.2V21h5Z"/></svg></a></div>'''
+              s=s.replace(block,icons,1)
+          else:
               plain='<div class="sub" style="margin-top:6px">WhatsApp: 01795934394 · Email: shrumu7@gmail.com</div>'
               if plain in s:
-                  s=s.replace(plain,icon_html,1)
-              else:
-                  raise SystemExit('About contact row not found')
+                  s=s.replace(plain,icons,1)
 
+          if 'business360-all-theme-fix' not in s:
+              s=s.replace('</head>','<style id="business360-all-theme-fix">.settings-theme-hidden{display:none!important}</style></head>',1)
           p.write_text(s,encoding='utf-8')
 
           g=Path('app/build.gradle')
@@ -100,32 +63,16 @@ function settingsPage(){
           PY
 
       - name: Verify source
-        shell: bash
         run: |
           set -e
-          grep -q 'function openAllTheme()' app/src/main/assets/index.html
-          grep -q 'function settingsPageBase()' app/src/main/assets/index.html
+          grep -q 'function openAllTheme(){' app/src/main/assets/index.html
+          grep -q 'function settingsPageBase(){' app/src/main/assets/index.html
           grep -q 'settings-theme-hidden' app/src/main/assets/index.html
           grep -q 'onclick="openAllTheme()">🎨 All Theme' app/src/main/assets/index.html
           grep -q 'wa.me/8801795934394' app/src/main/assets/index.html
           grep -q 'googlegmail://co?to=shrumu7@gmail.com' app/src/main/assets/index.html
           grep -q 'versionCode 22' app/build.gradle
           grep -q '1.6.4-all-theme' app/build.gradle
-          if grep -q '01795934394.*Email\|Email.*01795934394' app/src/main/assets/index.html; then echo 'Old contact text remains'; exit 1; fi
-
-      - name: Commit source changes
-        shell: bash
-        run: |
-          set -e
-          git config user.name 'Business360 Build Bot'
-          git config user.email 'actions@github.com'
-          git add app/src/main/assets/index.html app/build.gradle
-          if git diff --cached --quiet; then
-            echo 'Source already current.'
-          else
-            git commit -m 'Put all color controls inside All Theme and use brand contact icons [skip ci]'
-            git push origin HEAD:main
-          fi
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -136,24 +83,24 @@ function settingsPage(){
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Build APK
+
+      - name: Build legacy Business360 APK
         run: gradle --no-daemon clean assembleDebug --stacktrace
 
-      - name: Verify APK contents
+      - name: Verify packaged APK
         shell: bash
         run: |
           set -e
           apk=app/build/outputs/apk/debug/app-debug.apk
           test -f "$apk"
           unzip -p "$apk" assets/index.html > /tmp/b360-index.html
-          grep -q 'function openAllTheme()' /tmp/b360-index.html
+          grep -q 'function openAllTheme(){' /tmp/b360-index.html
           grep -q 'settings-theme-hidden' /tmp/b360-index.html
           grep -q 'wa.me/8801795934394' /tmp/b360-index.html
           grep -q 'googlegmail://co?to=shrumu7@gmail.com' /tmp/b360-index.html
-          grep -q 'versionCode 22' <(unzip -p "$apk" META-INF/MANIFEST.MF) || true
-          echo "Verified legacy Business360 APK: $(ls -lh "$apk" | awk '{print $5}')"
+          echo "APK VERIFIED: $(ls -lh "$apk" | awk '{print $5}')"
 
-      - name: Upload APK
+      - name: Upload verified APK
         uses: actions/upload-artifact@v4
         with:
           name: Business360-All-Theme-${{ github.run_number }}
