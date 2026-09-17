@@ -1,0 +1,66 @@
+name: Fix Gmail Icon and Build Business360 APK
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Fix Gmail icon in legacy Business360 UI
+        shell: bash
+        run: |
+          set -e
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('app/src/main/assets/index.html')
+          s=p.read_text(encoding='utf-8')
+          gmail='''<a href="googlegmail://co?to=shrumu7@gmail.com" aria-label="Gmail" title="Gmail" style="display:inline-grid;place-items:center;width:42px;height:42px;border-radius:10px;background:#fff;border:1px solid #ddd;text-decoration:none"><svg viewBox="0 0 32 24" width="28" height="22" aria-hidden="true"><path fill="#EA4335" d="M2 3.5 16 14 30 3.5V21H2Z"/><path fill="#FBBC04" d="M2 3.5 16 14 30 3.5 16 0Z" opacity=".9"/><path fill="#4285F4" d="M2 3.5 7 7.2V21H2Z"/><path fill="#34A853" d="M30 3.5 25 7.2V21h5Z"/></svg></a>'''
+          pattern=r'<a href="(?:mailto:shrumu7\\.com|googlegmail://co\\?to=shrumu7@gmail\\.com)"[^>]*>.*?</a>'
+          s,n=re.subn(pattern,gmail,s,count=1,flags=re.S)
+          if n==0:
+              pattern2=r'<a href="mailto:shrumu7@gmail\\.com"[^>]*>.*?</a>'
+              s,n=re.subn(pattern2,gmail,s,count=1,flags=re.S)
+          if n==0:
+              raise SystemExit('Gmail contact anchor not found')
+          p.write_text(s,encoding='utf-8')
+          PY
+          grep -q 'googlegmail://co?to=shrumu7@gmail.com' app/src/main/assets/index.html
+          grep -q 'viewBox="0 0 32 24"' app/src/main/assets/index.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/assets/index.html
+          git commit -m "Fix Gmail icon in legacy app [skip ci]" || true
+          git push
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Build legacy Business360 APK
+        run: gradle --no-daemon clean assembleDebug --stacktrace
+      - name: Verify packaged Gmail icon
+        shell: bash
+        run: |
+          set -e
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          test -f "$apk"
+          unzip -p "$apk" assets/index.html > /tmp/b360-index.html
+          grep -q 'googlegmail://co?to=shrumu7@gmail.com' /tmp/b360-index.html
+          grep -q 'viewBox="0 0 32 24"' /tmp/b360-index.html
+          echo "VERIFIED: Gmail SVG icon is inside packaged APK"
+      - name: Upload verified APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Business360-Gmail-Fixed-${{ github.run_number }}
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
