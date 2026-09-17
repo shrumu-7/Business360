@@ -1282,7 +1282,7 @@ async function savePin(){const a=document.getElementById('newPin').value,b=docum
 async function setupPattern(){modal(`<div class="modalhead"><h2>Pattern সেট করুন</h2><button class="close" onclick="closeModal()">✕</button></div><div class="sub">নিচের 1–9 বোতামে অন্তত 4টি পয়েন্ট ক্রমে চাপুন।</div><div id="setupPatternDots" style="display:grid;grid-template-columns:repeat(3,60px);gap:12px;justify-content:center;margin:18px 0"></div><div id="patternSeq" class="notice center">কোনো পয়েন্ট নির্বাচন হয়নি</div><button class="btn" style="margin-top:12px" onclick="savePattern()">Pattern সংরক্ষণ</button>`);patternBuffer=[];const d=document.getElementById('setupPatternDots');for(let i=1;i<=9;i++){const b=document.createElement('button');b.textContent=i;b.dataset.n=i;b.style.cssText="width:60px;height:60px;border-radius:50%;border:1px solid #ddd;background:#f3f1ff;color:#5d4be8;font-size:20px";b.onclick=()=>{if(!patternBuffer.includes(i)){patternBuffer.push(i);b.style.background='#5d4be8';b.style.color='#fff';document.getElementById('patternSeq').textContent=patternBuffer.join(' • ')}};d.appendChild(b)}}
 async function savePattern(){if(patternBuffer.length<4){toast('কমপক্ষে ৪টি পয়েন্ট দিন');return}db.settings.securityMode='pattern';db.settings.patternHash=await sha256(patternBuffer.join('-'));db.settings.pinHash='';save();patternBuffer=[];closeModal();toast('Pattern Lock চালু হয়েছে')}
 function disableLock(){db.settings.securityMode='none';db.settings.pinHash='';db.settings.patternHash='';save();closeModal();toast('লক বন্ধ হয়েছে')}
-function settingsPage(){document.getElementById("settings").innerHTML=`<div class="title"><div><h1>সেটিংস</h1><div class="sub">দোকানের তথ্য, Background থিম, লোগো, Lock ও Backup</div></div><div class="toolbar"><button class="btn" onclick="openThemePicker()">🎨 থিম পরিবর্তন</button><button class="btn secondary" onclick="openThemePicker()">🎨 All Theme</button></div></div>
+function settingsPageBase(){document.getElementById("settings").innerHTML=`<div class="title"><div><h1>সেটিংস</h1><div class="sub">দোকানের তথ্য, Background থিম, লোগো, Lock ও Backup</div></div><div class="toolbar"></div></div>
 <div class="card"><h3>📱 Home Screen / App</h3><div class="notice">Chrome-এ HTTPS লিংক খুলে “Add to Home screen / Install app” দিলে Home Screen-এ Business360 অ্যাপের মতো থাকবে। এই ব্রাউজার থেকে সরাসরি ZIP/HTML খুললে Install অপশন আসবে না।</div><button class="btn" style="margin-top:10px" onclick="installApp()">⌂ Home Screen-এ নিন</button></div><div class="card section"><h3>🎨 Background / থিম পরিবর্তন</h3><div class="theme-grid">
 <button class="theme-btn ${db.settings.theme==='purple'?'active':''}" onclick="applyTheme('purple');settingsPage()"><div class="theme-swatch" style="background:linear-gradient(135deg,#6c57f5,#8b5cf6)"></div>পার্পল</button>
 <button class="theme-btn ${db.settings.theme==='blue'?'active':''}" onclick="applyTheme('blue');settingsPage()"><div class="theme-swatch" style="background:linear-gradient(135deg,#3b82f6,#60a5fa)"></div>ব্লু</button>
@@ -1323,6 +1323,38 @@ function clearBusinessForNewOwner(){
 }
 function resetData(){if(confirm("সব বিক্রয়, পণ্য, Party ও হিসাব মুছে যাবে। আগে Backup নিয়েছেন?")){makeSafetyBackup("পুরোনো Reset Data");localStorage.removeItem(KEY);db=clone(initial);saleCart=[];purchaseCart=[];location.reload()}}
 
+function __themeCard(c){
+  const h=(c.innerHTML||'').toLowerCase();
+  return h.includes('theme-grid') || h.includes('button-theme-grid') || h.includes('premium-color-list') || h.includes('theme-panel-inline') || h.includes('applytheme(') || h.includes('applyappbackground(') || h.includes('applybuttontheme(') || h.includes('applypanelbg(') || h.includes('applyproductbg(') || h.includes('dashboardbg') || h.includes('dashboardcardbg') || h.includes('dashboardborder') || h.includes('dashboardcardcolors') || h.includes('থিম') || h.includes('ব্যাকগ্রাউন্ড') || h.includes('কালার') || h.includes('রং');
+}
+function __removeThemeHeaderControls(root){
+  root.querySelectorAll('[onclick*="openThemePicker"],.title .toolbar button').forEach(el=>{
+    const t=(el.textContent||'').trim().toLowerCase();
+    const oc=(el.getAttribute('onclick')||'');
+    if(t.includes('থিম') || t.includes('all theme') || oc.includes('openThemePicker')) el.remove();
+  });
+}
+function openAllTheme(){
+  settingsPageBase();
+  const root=document.getElementById('settings');
+  const cards=[...root.querySelectorAll('.card')].filter(__themeCard);
+  if(!cards.length){ toast('All Theme options পাওয়া যায়নি'); return; }
+  const body=cards.map(c=>c.outerHTML.replace(/settingsPage\(\)/g,'closeModal();settingsPage()')).join('');
+  modal(`<div class="modalhead"><div><h2 style="margin:0">🎨 All Theme</h2><div class="theme-current">সব কালার ও থিম পরিবর্তনের অপশন</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="theme-help">সব Theme, App Background, Dashboard, Button, Card, Border, Panel ও Product Background option এখানে থাকবে।</div>${body}`);
+}
+function settingsPage(){
+  settingsPageBase();
+  const root=document.getElementById('settings');
+  __removeThemeHeaderControls(root);
+  [...root.querySelectorAll('.card')].forEach(c=>{if(__themeCard(c))c.remove();});
+  const title=root.querySelector('.title');
+  if(title){
+    let tb=title.querySelector('.toolbar');
+    if(!tb){tb=document.createElement('div');tb.className='toolbar';title.appendChild(tb);}
+    const b=document.createElement('button');
+    b.className='btn secondary';b.type='button';b.textContent='🎨 All Theme';b.onclick=openAllTheme;tb.appendChild(b);
+  }
+}
 function aboutPage(){
 const logo=db.settings.logo||(!db.settings.logoRemoved?'branding/business360_logo.png':'');
 document.getElementById('about').innerHTML=`<div class="about-wrap">
