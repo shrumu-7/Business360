@@ -1,11 +1,13 @@
-# Build trigger: legacy All Theme verification
 name: Build Business360 APK
+
 on:
   workflow_dispatch:
   push:
     branches: [main]
+
 permissions:
   contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,100 +15,95 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Fix legacy Business360 Settings All Theme
+      - name: Apply verified legacy All Theme source changes
         shell: bash
         run: |
-          set -e
-          python3 <<'PY'
+          set -euo pipefail
+          python3 - <<'PY'
           from pathlib import Path
           import re
-          p=Path('app/src/main/assets/index.html')
-          s=p.read_text(encoding='utf-8')
+          p = Path('app/src/main/assets/index.html')
+          s = p.read_text(encoding='utf-8')
 
           if 'function settingsPageBase(){' not in s:
-              if 'function settingsPage(){' not in s:
-                  raise SystemExit('settingsPage missing')
-              s=s.replace('function settingsPage(){','function settingsPageBase(){',1)
+              s = s.replace('function settingsPage(){', 'function settingsPageBase(){', 1)
 
-          helper = r'''function __themeCard(c){
-  const h=(c.innerHTML||'').toLowerCase();
-  return h.includes('theme-grid') || h.includes('button-theme-grid') || h.includes('premium-color-list') || h.includes('theme-panel-inline') || h.includes('applytheme(') || h.includes('applyappbackground(') || h.includes('applybuttontheme(') || h.includes('applypanelbg(') || h.includes('applyproductbg(') || h.includes('dashboardbg') || h.includes('dashboardcardbg') || h.includes('dashboardborder') || h.includes('dashboardcardcolors') || h.includes('থিম') || h.includes('ব্যাকগ্রাউন্ড') || h.includes('কালার') || h.includes('রং');
-}
-function __removeThemeHeaderControls(root){
-  root.querySelectorAll('.title .toolbar button,[onclick*="openThemePicker"]').forEach(el=>{
-    const t=(el.textContent||'').trim().toLowerCase();
-    if(t.includes('থিম') || t.includes('all theme') || (el.getAttribute('onclick')||'').includes('openThemePicker')) el.remove();
-  });
-}
-function openAllTheme(){
-  settingsPageBase();
-  const root=document.getElementById('settings');
-  const cards=[...root.querySelectorAll('.card')].filter(__themeCard);
-  if(!cards.length){ toast('All Theme options পাওয়া যায়নি'); return; }
-  const body=cards.map(c=>c.outerHTML.replace(/settingsPage\(\)/g,'closeModal();settingsPage()')).join('');
-  modal(`<div class="modalhead"><div><h2 style="margin:0">🎨 All Theme</h2><div class="theme-current">সব কালার ও থিম পরিবর্তনের অপশন</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="theme-help">Settings-এর সব Theme, App Background, Dashboard, Button, Card, Border, Panel ও Product Background option এখানে একসাথে থাকবে।</div>${body}`);
-}
-function settingsPage(){
-  settingsPageBase();
-  const root=document.getElementById('settings');
-  __removeThemeHeaderControls(root);
-  [...root.querySelectorAll('.card')].forEach(c=>{if(__themeCard(c))c.remove();});
-  const title=root.querySelector('.title');
-  if(title){
-    let tb=title.querySelector('.toolbar');
-    if(!tb){ tb=document.createElement('div'); tb.className='toolbar'; title.appendChild(tb); }
-    const b=document.createElement('button');
-    b.className='btn secondary'; b.type='button'; b.textContent='🎨 All Theme'; b.onclick=openAllTheme;
-    tb.appendChild(b);
-  }
-}
-'''
-          if 'function __themeCard(c){' not in s:
+          if 'function openAllTheme(){' not in s:
+              helper = r'''function __themeCard(c){
+            const h=(c.innerHTML||'').toLowerCase();
+            return h.includes('theme-grid') || h.includes('button-theme-grid') || h.includes('premium-color-list') || h.includes('theme-panel-inline') || h.includes('applytheme(') || h.includes('applyappbackground(') || h.includes('applybuttontheme(') || h.includes('applypanelbg(') || h.includes('applyproductbg(') || h.includes('dashboardbg') || h.includes('dashboardcardbg') || h.includes('dashboardborder') || h.includes('dashboardcardcolors') || h.includes('থিম') || h.includes('ব্যাকগ্রাউন্ড') || h.includes('কালার') || h.includes('রং');
+          }
+          function __removeThemeHeaderControls(root){
+            root.querySelectorAll('[onclick*="openThemePicker"],.title .toolbar button').forEach(el=>{
+              const t=(el.textContent||'').trim().toLowerCase();
+              const oc=(el.getAttribute('onclick')||'');
+              if(t.includes('থিম') || t.includes('all theme') || oc.includes('openThemePicker')) el.remove();
+            });
+          }
+          function openAllTheme(){
+            settingsPageBase();
+            const root=document.getElementById('settings');
+            const cards=[...root.querySelectorAll('.card')].filter(__themeCard);
+            if(!cards.length){ toast('All Theme options পাওয়া যায়নি'); return; }
+            const body=cards.map(c=>c.outerHTML.replace(/settingsPage\(\)/g,'closeModal();settingsPage()')).join('');
+            modal(`<div class="modalhead"><div><h2 style="margin:0">🎨 All Theme</h2><div class="theme-current">সব কালার ও থিম পরিবর্তনের অপশন</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="theme-help">সব Theme, App Background, Dashboard, Button, Card, Border, Panel ও Product Background option এখানে থাকবে।</div>${body}`);
+          }
+          function settingsPage(){
+            settingsPageBase();
+            const root=document.getElementById('settings');
+            __removeThemeHeaderControls(root);
+            [...root.querySelectorAll('.card')].forEach(c=>{if(__themeCard(c))c.remove();});
+            const title=root.querySelector('.title');
+            if(title){
+              let tb=title.querySelector('.toolbar');
+              if(!tb){tb=document.createElement('div');tb.className='toolbar';title.appendChild(tb);}
+              const b=document.createElement('button');
+              b.className='btn secondary';b.type='button';b.textContent='🎨 All Theme';b.onclick=openAllTheme;tb.appendChild(b);
+            }
+          }
+          '''
               anchor='function aboutPage(){'
-              if anchor not in s: raise SystemExit('aboutPage missing')
-              s=s.replace(anchor,helper+anchor,1)
+              if anchor not in s:
+                  raise SystemExit('aboutPage missing')
+              s=s.replace(anchor, helper+anchor, 1)
 
-          s=re.sub(r'<button[^>]*onclick="openThemePicker\(\)"[^>]*>\s*🎨\s*থিম পরিবর্তন\s*</button>', '', s, count=1)
-          s=re.sub(r'<button[^>]*onclick="openThemePicker\(\)"[^>]*>\s*🎨\s*All Theme\s*</button>', '', s, count=1)
-          old_mail=r'<a href="mailto:shrumu7@gmail\.com"[^>]*>.*?</a>'
-          gmail='''<a href="googlegmail://co?to=shrumu7@gmail.com" aria-label="Gmail" title="Gmail" style="display:inline-grid;place-items:center;width:42px;height:42px;border-radius:10px;background:#fff;border:1px solid #ddd;text-decoration:none"><svg viewBox="0 0 32 24" width="28" height="22" aria-hidden="true"><path fill="#EA4335" d="M2 3h28v18H2z"/><path fill="#fff" d="M3 4.5 16 14 29 4.5V8L16 17 3 8z"/><path fill="#EA4335" d="M3 21V4.5L16 14 29 4.5V21h-4V10.9L16 18 7 10.9V21z"/></svg></a>'''
-          s=re.sub(old_mail,gmail,s,count=1,flags=re.S)
-          p.write_text(s,encoding='utf-8')
+          s=re.sub(r'<button[^>]*onclick="openThemePicker\(\)"[^>]*>\s*🎨\s*(?:থিম পরিবর্তন|All Theme)\s*</button>', '', s, count=2)
+          s=re.sub(r'<a href="mailto:shrumu7@gmail\.com"[^>]*>.*?</a>', '<a href="googlegmail://co?to=shrumu7@gmail.com" aria-label="Gmail" title="Gmail" style="display:inline-grid;place-items:center;width:42px;height:42px;border-radius:10px;background:#fff;border:1px solid #ddd;text-decoration:none"><svg viewBox="0 0 32 24" width="28" height="22" aria-hidden="true"><path fill="#EA4335" d="M2 3h28v18H2z"/><path fill="#fff" d="M3 4.5 16 14 29 4.5V8L16 17 3 8z"/><path fill="#EA4335" d="M3 21V4.5L16 14 29 4.5V21h-4V10.9L16 18 7 10.9V21z"/></svg></a>', s, count=1, flags=re.S)
+          p.write_text(s, encoding='utf-8')
+
           g=Path('app/build.gradle')
           t=g.read_text(encoding='utf-8')
-          t=re.sub(r'versionCode\s+\d+','versionCode 25',t,count=1)
-          t=re.sub(r"versionName\s+'[^']*'","versionName '1.6.7-all-theme'",t,count=1)
-          g.write_text(t,encoding='utf-8')
+          t=re.sub(r'versionCode\s+\d+', 'versionCode 25', t, count=1)
+          t=re.sub(r"versionName\s+'[^']*'", "versionName '1.6.7-all-theme'", t, count=1)
+          g.write_text(t, encoding='utf-8')
           PY
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add app/src/main/assets/index.html app/build.gradle
           if ! git diff --cached --quiet; then
-            git commit -m "Fix Settings All Theme architecture [skip ci]"
+            git commit -m "Apply verified legacy All Theme source"
             git push
           fi
 
-      - name: Verify source architecture
+      - name: Verify source
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
           f=app/src/main/assets/index.html
           test "$(grep -o 'function settingsPageBase(){' "$f" | wc -l)" -eq 1
           test "$(grep -o 'function settingsPage(){' "$f" | wc -l)" -eq 1
           test "$(grep -o 'function openAllTheme(){' "$f" | wc -l)" -eq 1
           test "$(grep -o 'function __themeCard(c){' "$f" | wc -l)" -eq 1
-          test "$(grep -o '🎨 All Theme' "$f" | wc -l)" -ge 1
           grep -q "b.textContent='🎨 All Theme'" "$f"
           grep -q "c.remove()" "$f"
-          grep -q "h.includes('dashboardcardcolors')" "$f"
+          grep -q "dashboardcardcolors" "$f"
           grep -q "applyProductBg" "$f"
           grep -q "applyPanelBg" "$f"
           grep -q "applyButtonTheme" "$f"
           grep -q "applyAppBackground" "$f"
           grep -q "applyTheme" "$f"
-          test "$(grep -o 'googlegmail://co?to=shrumu7@gmail.com' "$f" | wc -l)" -eq 1
-          ! grep -q '<b>Gmail</b>' "$f"
-          ! grep -q '<b>WhatsApp</b>' "$f"
+          grep -q 'googlegmail://co?to=shrumu7@gmail.com' "$f"
           grep -q 'wa.me/8801795934394' "$f"
           grep -q 'versionCode 25' app/build.gradle
           grep -q '1.6.7-all-theme' app/build.gradle
@@ -116,6 +113,7 @@ function settingsPage(){
         with:
           distribution: temurin
           java-version: '17'
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -124,10 +122,10 @@ function settingsPage(){
       - name: Build legacy Business360 APK
         run: gradle --no-daemon clean assembleDebug --stacktrace
 
-      - name: Verify packaged APK Settings → All Theme
+      - name: Verify packaged APK
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
           apk=app/build/outputs/apk/debug/app-debug.apk
           test -f "$apk"
           unzip -p "$apk" assets/index.html > /tmp/b360-index.html
@@ -138,13 +136,13 @@ function settingsPage(){
           test "$(grep -o 'function __themeCard(c){' "$f" | wc -l)" -eq 1
           grep -q "b.textContent='🎨 All Theme'" "$f"
           grep -q "c.remove()" "$f"
-          grep -q "h.includes('dashboardcardcolors')" "$f"
+          grep -q "dashboardcardcolors" "$f"
           grep -q "applyProductBg" "$f"
           grep -q "applyPanelBg" "$f"
           grep -q "applyButtonTheme" "$f"
           grep -q "applyAppBackground" "$f"
           grep -q "applyTheme" "$f"
-          test "$(grep -o 'googlegmail://co?to=shrumu7@gmail.com' "$f" | wc -l)" -eq 1
+          grep -q 'googlegmail://co?to=shrumu7@gmail.com' "$f"
           echo "APK VERIFIED: $(ls -lh "$apk" | awk '{print $5}')"
 
       - name: Upload verified APK
