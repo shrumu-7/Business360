@@ -15,16 +15,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Apply verified legacy All Theme source changes
+      - name: Apply final legacy UI fixes
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
           import re
+
           p = Path('app/src/main/assets/index.html')
           s = p.read_text(encoding='utf-8')
 
+          # Keep the existing legacy All Theme architecture, but make its Settings button idempotent.
           if 'function settingsPageBase(){' not in s:
               s = s.replace('function settingsPage(){', 'function settingsPageBase(){', 1)
 
@@ -57,7 +59,9 @@ jobs:
             if(title){
               let tb=title.querySelector('.toolbar');
               if(!tb){tb=document.createElement('div');tb.className='toolbar';title.appendChild(tb);}
+              title.querySelectorAll('button[data-all-theme]').forEach(x=>x.remove());
               const b=document.createElement('button');
+              b.setAttribute('data-all-theme','1');
               b.className='btn secondary';b.type='button';b.textContent='🎨 All Theme';b.onclick=openAllTheme;tb.appendChild(b);
             }
           }
@@ -67,24 +71,25 @@ jobs:
                   raise SystemExit('aboutPage missing')
               s=s.replace(anchor, helper+anchor, 1)
 
-          s=re.sub(r'<button[^>]*onclick="openThemePicker\(\)"[^>]*>\s*🎨\s*(?:থিম পরিবর্তন|All Theme)\s*</button>', '', s, count=2)
-          s=re.sub(r'<a href="mailto:shrumu7@gmail\.com"[^>]*>.*?</a>', '<a href="googlegmail://co?to=shrumu7@gmail.com" aria-label="Gmail" title="Gmail" style="display:inline-grid;place-items:center;width:42px;height:42px;border-radius:10px;background:#fff;border:1px solid #ddd;text-decoration:none"><svg viewBox="0 0 32 24" width="28" height="22" aria-hidden="true"><path fill="#EA4335" d="M2 3h28v18H2z"/><path fill="#fff" d="M3 4.5 16 14 29 4.5V8L16 17 3 8z"/><path fill="#EA4335" d="M3 21V4.5L16 14 29 4.5V21h-4V10.9L16 18 7 10.9V21z"/></svg></a>', s, count=1, flags=re.S)
+          # Remove any old visible theme-picker buttons.
+          s=re.sub(r'<button[^>]*onclick="openThemePicker\(\)"[^>]*>\s*🎨\s*(?:থিম পরিবর্তন|All Theme)\s*</button>', '', s, flags=re.S)
+
+          # About: icon-only WhatsApp and real Gmail M icon; preserve the user's identity text.
+          wa = '''<a href="https://wa.me/8801795934394" aria-label="WhatsApp" title="WhatsApp" class="about-contact-icon" style="display:inline-grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#25D366;color:#fff;text-decoration:none;box-shadow:0 3px 10px #25D36655"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#fff"/><path fill="#25D366" d="M16 5.2A10.8 10.8 0 0 0 6.7 21.5L5.2 26.8l5.4-1.4A10.8 10.8 0 1 0 16 5.2Zm0 2.2a8.6 8.6 0 1 1-4.4 16l-.7-.4-2.7.7.7-2.6-.4-.7A8.6 8.6 0 0 1 16 7.4Zm-3.1 3.9c-.3 0-.6.1-.8.4-.2.3-.8.8-.8 2 0 1.2.8 2.4.9 2.6.1.2 1.6 2.6 4 3.6 2 .8 2.4.6 2.9.6.5-.1 1.6-.6 1.8-1.2.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.7-.4l-1.5-.7c-.4-.1-.6-.2-.8.2l-.6.9c-.2.3-.3.3-.7.1-.4-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.2-.7l.5-.6c.2-.2.2-.4.3-.6.1-.2 0-.4-.1-.6l-.6-1.5c-.2-.4-.4-.4-.8-.4Z"/></svg></a>'''
+          gmail = '''<a href="googlegmail://co?to=shrumu7@gmail.com" aria-label="Gmail" title="Gmail" class="about-contact-icon" style="display:inline-grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid #d9dce5;text-decoration:none;box-shadow:0 3px 10px #00000014"><svg viewBox="0 0 40 30" width="30" height="24" aria-hidden="true"><rect x="1" y="1" width="38" height="28" rx="4" fill="#fff"/><path fill="#EA4335" d="M3 4.5 20 17 37 4.5V27H33V10.8L20 20.3 7 10.8V27H3Z"/><path fill="#C5221F" d="M3 4.5 20 17 37 4.5 34.2 2 20 12.5 5.8 2Z"/></svg></a>'''
+
+          # Replace any existing contact anchors regardless of their current inner icon/text.
+          s = re.sub(r'<a\b[^>]*href="https://wa\.me/8801795934394"[^>]*>.*?</a>', wa, s, count=1, flags=re.S)
+          s = re.sub(r'<a\b[^>]*href="googlegmail://co\?to=shrumu7@gmail\.com"[^>]*>.*?</a>', gmail, s, count=1, flags=re.S)
+          s = re.sub(r'<a\b[^>]*href="mailto:shrumu7@gmail\.com"[^>]*>.*?</a>', gmail, s, count=1, flags=re.S)
+
+          # Ensure About's white cards always have readable dark text; identity content is untouched.
+          css = '''\n/* Final About contrast + contact icon fix */\n#about .card{background:#fff!important;color:#24233a!important;border-color:#e3e5ee!important}\n#about .card h1,#about .card h2,#about .card h3,#about .card h4,#about .card b,#about .card strong,#about .card p,#about .card span,#about .card div,#about .card label{color:#24233a!important}\n#about .card .sub,#about .card small{color:#5e5b6d!important}\n#about .about-contact-icon,#about .about-contact-icon svg{color:inherit}\n'''
+          if 'Final About contrast + contact icon fix' not in s:
+              s=s.replace('</style>', css+'</style>', 1)
+
           p.write_text(s, encoding='utf-8')
-
-          g=Path('app/build.gradle')
-          t=g.read_text(encoding='utf-8')
-          t=re.sub(r'versionCode\s+\d+', 'versionCode 25', t, count=1)
-          t=re.sub(r"versionName\s+'[^']*'", "versionName '1.6.7-all-theme'", t, count=1)
-          g.write_text(t, encoding='utf-8')
           PY
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app/src/main/assets/index.html app/build.gradle
-          if ! git diff --cached --quiet; then
-            git commit -m "Apply verified legacy All Theme source"
-            git push
-          fi
 
       - name: Verify source
         shell: bash
@@ -95,18 +100,19 @@ jobs:
           test "$(grep -o 'function settingsPage(){' "$f" | wc -l)" -eq 1
           test "$(grep -o 'function openAllTheme(){' "$f" | wc -l)" -eq 1
           test "$(grep -o 'function __themeCard(c){' "$f" | wc -l)" -eq 1
-          grep -q "b.textContent='🎨 All Theme'" "$f"
-          grep -q "c.remove()" "$f"
-          grep -q "dashboardcardcolors" "$f"
-          grep -q "applyProductBg" "$f"
-          grep -q "applyPanelBg" "$f"
-          grep -q "applyButtonTheme" "$f"
-          grep -q "applyAppBackground" "$f"
-          grep -q "applyTheme" "$f"
+          test "$(grep -o 'data-all-theme' "$f" | wc -l)" -ge 1
+          grep -q 'about-contact-icon' "$f"
+          grep -q '25D366' "$f"
+          grep -q 'EA4335' "$f"
+          grep -q 'Final About contrast + contact icon fix' "$f"
           grep -q 'googlegmail://co?to=shrumu7@gmail.com' "$f"
           grep -q 'wa.me/8801795934394' "$f"
-          grep -q 'versionCode 25' app/build.gradle
-          grep -q '1.6.7-all-theme' app/build.gradle
+          grep -q 'Md Sahadul Hoque Rumu' "$f"
+          grep -q 'applyProductBg' "$f"
+          grep -q 'applyPanelBg' "$f"
+          grep -q 'applyButtonTheme' "$f"
+          grep -q 'applyAppBackground' "$f"
+          grep -q 'applyTheme' "$f"
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -133,21 +139,24 @@ jobs:
           test "$(grep -o 'function settingsPageBase(){' "$f" | wc -l)" -eq 1
           test "$(grep -o 'function settingsPage(){' "$f" | wc -l)" -eq 1
           test "$(grep -o 'function openAllTheme(){' "$f" | wc -l)" -eq 1
-          test "$(grep -o 'function __themeCard(c){' "$f" | wc -l)" -eq 1
-          grep -q "b.textContent='🎨 All Theme'" "$f"
-          grep -q "c.remove()" "$f"
-          grep -q "dashboardcardcolors" "$f"
-          grep -q "applyProductBg" "$f"
-          grep -q "applyPanelBg" "$f"
-          grep -q "applyButtonTheme" "$f"
-          grep -q "applyAppBackground" "$f"
-          grep -q "applyTheme" "$f"
+          test "$(grep -o 'data-all-theme' "$f" | wc -l)" -ge 1
+          test "$(grep -o 'about-contact-icon' "$f" | wc -l)" -ge 2
+          grep -q '25D366' "$f"
+          grep -q 'EA4335' "$f"
+          grep -q 'Final About contrast + contact icon fix' "$f"
           grep -q 'googlegmail://co?to=shrumu7@gmail.com' "$f"
+          grep -q 'wa.me/8801795934394' "$f"
+          grep -q 'Md Sahadul Hoque Rumu' "$f"
+          grep -q 'applyProductBg' "$f"
+          grep -q 'applyPanelBg' "$f"
+          grep -q 'applyButtonTheme' "$f"
+          grep -q 'applyAppBackground' "$f"
+          grep -q 'applyTheme' "$f"
           echo "APK VERIFIED: $(ls -lh "$apk" | awk '{print $5}')"
 
       - name: Upload verified APK
         uses: actions/upload-artifact@v4
         with:
-          name: Business360-All-Theme-${{ github.run_number }}
+          name: Business360-Final-${{ github.run_number }}
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
