@@ -33,7 +33,6 @@ public class MainActivity extends AppCompatActivity {
         webView.setBackgroundColor(Color.rgb(6, 104, 238));
         setContentView(webView);
 
-        // Android 15 edge-to-edge safety: keep web content below system bars.
         webView.setFitsSystemWindows(true);
         webView.setOnApplyWindowInsetsListener((v, insets) -> {
             int top = insets.getInsets(WindowInsets.Type.statusBars()).top;
@@ -53,7 +52,18 @@ public class MainActivity extends AppCompatActivity {
         s.setDisplayZoomControls(false);
         s.setMediaPlaybackRequiresUserGesture(false);
 
-        webView.setWebViewClient(new WebViewClient());
+        webView.setWebViewClient(new WebViewClient() {
+            @Override public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                if (url == null) return false;
+                if (url.startsWith("http://") || url.startsWith("https://")) {
+                    if (url.startsWith("https://wa.me/") || url.startsWith("https://api.whatsapp.com/") || url.startsWith("mailto:")) {
+                        try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); return true; } catch (Exception ignored) { return false; }
+                    }
+                    return false;
+                }
+                try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); return true; } catch (Exception ignored) { return false; }
+            }
+        });
         webView.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (filePathCallback != null) filePathCallback.onReceiveValue(null);
