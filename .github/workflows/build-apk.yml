@@ -1,3 +1,4 @@
+# Build trigger: legacy All Theme verification
 name: Build Business360 APK
 on:
   workflow_dispatch:
@@ -22,8 +23,6 @@ jobs:
           p=Path('app/src/main/assets/index.html')
           s=p.read_text(encoding='utf-8')
 
-          # Rename the original renderer once so the visible Settings page can
-          # be a clean shell while the complete theme controls stay in All Theme.
           if 'function settingsPageBase(){' not in s:
               if 'function settingsPage(){' not in s:
                   raise SystemExit('settingsPage missing')
@@ -31,21 +30,7 @@ jobs:
 
           helper = r'''function __themeCard(c){
   const h=(c.innerHTML||'').toLowerCase();
-  return h.includes('theme-grid') ||
-         h.includes('button-theme-grid') ||
-         h.includes('premium-color-list') ||
-         h.includes('theme-panel-inline') ||
-         h.includes('applytheme(') ||
-         h.includes('applyappbackground(') ||
-         h.includes('applybuttontheme(') ||
-         h.includes('applypanelbg(') ||
-         h.includes('applyproductbg(') ||
-         h.includes('dashboardbg') ||
-         h.includes('dashboardcardbg') ||
-         h.includes('dashboardborder') ||
-         h.includes('dashboardcardcolors') ||
-         h.includes('থিম') || h.includes('ব্যাকগ্রাউন্ড') ||
-         h.includes('কালার') || h.includes('রং');
+  return h.includes('theme-grid') || h.includes('button-theme-grid') || h.includes('premium-color-list') || h.includes('theme-panel-inline') || h.includes('applytheme(') || h.includes('applyappbackground(') || h.includes('applybuttontheme(') || h.includes('applypanelbg(') || h.includes('applyproductbg(') || h.includes('dashboardbg') || h.includes('dashboardcardbg') || h.includes('dashboardborder') || h.includes('dashboardcardcolors') || h.includes('থিম') || h.includes('ব্যাকগ্রাউন্ড') || h.includes('কালার') || h.includes('রং');
 }
 function __removeThemeHeaderControls(root){
   root.querySelectorAll('.title .toolbar button,[onclick*="openThemePicker"]').forEach(el=>{
@@ -76,21 +61,16 @@ function settingsPage(){
   }
 }
 '''
-
           if 'function __themeCard(c){' not in s:
               anchor='function aboutPage(){'
               if anchor not in s: raise SystemExit('aboutPage missing')
               s=s.replace(anchor,helper+anchor,1)
 
-          # Make sure no legacy direct theme button remains in the base Settings header.
           s=re.sub(r'<button[^>]*onclick="openThemePicker\(\)"[^>]*>\s*🎨\s*থিম পরিবর্তন\s*</button>', '', s, count=1)
           s=re.sub(r'<button[^>]*onclick="openThemePicker\(\)"[^>]*>\s*🎨\s*All Theme\s*</button>', '', s, count=1)
-
-          # Keep the previously requested icon-only contact behavior intact.
           old_mail=r'<a href="mailto:shrumu7@gmail\.com"[^>]*>.*?</a>'
           gmail='''<a href="googlegmail://co?to=shrumu7@gmail.com" aria-label="Gmail" title="Gmail" style="display:inline-grid;place-items:center;width:42px;height:42px;border-radius:10px;background:#fff;border:1px solid #ddd;text-decoration:none"><svg viewBox="0 0 32 24" width="28" height="22" aria-hidden="true"><path fill="#EA4335" d="M2 3h28v18H2z"/><path fill="#fff" d="M3 4.5 16 14 29 4.5V8L16 17 3 8z"/><path fill="#EA4335" d="M3 21V4.5L16 14 29 4.5V21h-4V10.9L16 18 7 10.9V21z"/></svg></a>'''
           s=re.sub(old_mail,gmail,s,count=1,flags=re.S)
-
           p.write_text(s,encoding='utf-8')
           g=Path('app/build.gradle')
           t=g.read_text(encoding='utf-8')
@@ -98,7 +78,6 @@ function settingsPage(){
           t=re.sub(r"versionName\s+'[^']*'","versionName '1.6.7-all-theme'",t,count=1)
           g.write_text(t,encoding='utf-8')
           PY
-
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add app/src/main/assets/index.html app/build.gradle
