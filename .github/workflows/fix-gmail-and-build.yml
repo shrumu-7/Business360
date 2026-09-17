@@ -5,6 +5,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+# Final verified build trigger: legacy app + preserved signing key.
 jobs:
   build:
     runs-on: ubuntu-latest
