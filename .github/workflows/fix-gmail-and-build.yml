@@ -45,7 +45,11 @@ jobs:
           test "$(grep -o 'function settingsPageBase(){' "$f" | wc -l)" -eq 1
           test "$(grep -o 'function settingsPage(){' "$f" | wc -l)" -eq 1
           test "$(grep -o 'function openAllTheme(){' "$f" | wc -l)" -eq 1
-          test "$(grep -o 'about-contact-icon' "$f" | wc -l)" -ge 2
+          grep -q '<div class="brand" id="brand">Business360</div>' "$f"
+          grep -q 'Security-first startup' "$f"
+          grep -q 'if(db.settings.securityMode && db.settings.securityMode !== "none") lockOverlay();' "$f"
+          test "$(grep -o 'function lockOverlay(){' "$f" | wc -l)" -eq 1
+          grep -q 'about-contact-icon' "$f"
           grep -q 'Md Sahadul Hoque Rumu' "$f"
           grep -q 'mailto:shrumu7@gmail.com' "$f"
           grep -q 'wa.me/8801795934394' "$f"
@@ -74,7 +78,11 @@ jobs:
           test "$(grep -o 'function settingsPageBase(){' "$f" | wc -l)" -eq 1
           test "$(grep -o 'function settingsPage(){' "$f" | wc -l)" -eq 1
           test "$(grep -o 'function openAllTheme(){' "$f" | wc -l)" -eq 1
-          test "$(grep -o 'about-contact-icon' "$f" | wc -l)" -ge 2
+          grep -q '<div class="brand" id="brand">Business360</div>' "$f"
+          grep -q 'Security-first startup' "$f"
+          grep -q 'if(db.settings.securityMode && db.settings.securityMode !== "none") lockOverlay();' "$f"
+          test "$(grep -o 'function lockOverlay(){' "$f" | wc -l)" -eq 1
+          grep -q 'about-contact-icon' "$f"
           grep -q 'Md Sahadul Hoque Rumu' "$f"
           grep -q 'mailto:shrumu7@gmail.com' "$f"
           grep -q 'wa.me/8801795934394' "$f"
