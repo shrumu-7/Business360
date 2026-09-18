@@ -23,7 +23,7 @@ jobs:
           s=p.read_text(encoding='utf-8')
 
           wa='''<a href="https://wa.me/8801795934394" aria-label="WhatsApp" title="WhatsApp" class="about-contact-icon" style="display:inline-grid;place-items:center;width:46px;height:46px;border-radius:50%;background:#25D366;color:#fff;text-decoration:none;box-shadow:0 3px 10px #25D36655"><svg viewBox="0 0 32 32" width="29" height="29" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#fff"/><path fill="#25D366" d="M16 5.2A10.8 10.8 0 0 0 6.7 21.5L5.2 26.8l5.4-1.4A10.8 10.8 0 1 0 16 5.2Zm0 2.2a8.6 8.6 0 1 1-4.4 16l-.7-.4-2.7.7.7-2.6-.4-.7A8.6 8.6 0 0 1 16 7.4Zm-3.1 3.9c-.3 0-.6.1-.8.4-.2.3-.8.8-.8 2 0 1.2.8 2.4.9 2.6.1.2 1.6 2.6 4 3.6 2 .8 2.4.6 2.9.6.5-.1 1.6-.6 1.8-1.2.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.7-.4l-1.5-.7c-.4-.1-.6-.2-.8.2l-.6.9c-.2.3-.3.3-.7.1-.4-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.2-.7l.5-.6c.2-.2.2-.4.3-.6.1-.2 0-.4-.1-.6l-.6-1.5c-.2-.4-.4-.4-.8-.4Z"/></svg></a>'''
-          gmail='''<a href="googlegmail://co?to=shrumu7@gmail.com" aria-label="Gmail" title="Gmail" class="about-contact-icon" style="display:inline-grid;place-items:center;width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid #d9dce5;text-decoration:none;box-shadow:0 3px 10px #00000014"><svg viewBox="0 0 40 30" width="31" height="24" aria-hidden="true"><path fill="#EA4335" d="M3 26V5.1C3 3.9 3.8 3 5 3h30c1.2 0 2 .9 2 2.1V26h-5V9.2L20 19 8 9.2V26H3Z"/><path fill="#C5221F" d="M5 3h2.8L20 13.1 32.2 3H35L20 15.6 5 3Z"/><path fill="#A50E0E" d="M3 5.1V26h5V9.2L3 5.1Zm34 0V26h-5V9.2L37 5.1Z"/></svg></a>'''
+          gmail='''<a href="mailto:shrumu7@gmail.com" aria-label="Gmail" title="Gmail" class="about-contact-icon" style="display:inline-grid;place-items:center;width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid #d9dce5;text-decoration:none;box-shadow:0 3px 10px #00000014"><svg viewBox="0 0 40 30" width="31" height="24" aria-hidden="true"><path fill="#EA4335" d="M3 26V5.1C3 3.9 3.8 3 5 3h30c1.2 0 2 .9 2 2.1V26h-5V9.2L20 19 8 9.2V26H3Z"/><path fill="#C5221F" d="M5 3h2.8L20 13.1 32.2 3H35L20 15.6 5 3Z"/><path fill="#A50E0E" d="M3 5.1V26h5V9.2L3 5.1Zm34 0V26h-5V9.2L37 5.1Z"/></svg></a>'''
           contact=f'''<div class="about-contact" style="margin-top:12px;display:flex;gap:12px;align-items:center">{wa}{gmail}</div>'''
           s,n=re.subn(r'<div class="about-contact"[^>]*>.*?</div>',contact,s,count=1,flags=re.S)
           if n==0: raise SystemExit('About contact block not found')
@@ -47,7 +47,7 @@ jobs:
           test "$(grep -o 'function openAllTheme(){' "$f" | wc -l)" -eq 1
           test "$(grep -o 'about-contact-icon' "$f" | wc -l)" -ge 2
           grep -q 'Md Sahadul Hoque Rumu' "$f"
-          grep -q 'googlegmail://co?to=shrumu7@gmail.com' "$f"
+          grep -q 'mailto:shrumu7@gmail.com' "$f"
           grep -q 'wa.me/8801795934394' "$f"
           grep -q 'Final About contrast and icon-only contacts' "$f"
           ! grep -q '<b>WhatsApp</b>' "$f"
@@ -76,7 +76,7 @@ jobs:
           test "$(grep -o 'function openAllTheme(){' "$f" | wc -l)" -eq 1
           test "$(grep -o 'about-contact-icon' "$f" | wc -l)" -ge 2
           grep -q 'Md Sahadul Hoque Rumu' "$f"
-          grep -q 'googlegmail://co?to=shrumu7@gmail.com' "$f"
+          grep -q 'mailto:shrumu7@gmail.com' "$f"
           grep -q 'wa.me/8801795934394' "$f"
           grep -q 'Final About contrast and icon-only contacts' "$f"
           ! grep -q '<b>WhatsApp</b>' "$f"
