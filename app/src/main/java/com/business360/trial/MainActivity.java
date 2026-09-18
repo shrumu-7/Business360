@@ -55,19 +55,17 @@ public class MainActivity extends AppCompatActivity {
         webView.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 if (url == null) return false;
-                if (url.startsWith("http://") || url.startsWith("https://")) {
-                    if (url.startsWith("https://wa.me/") || url.startsWith("https://api.whatsapp.com/")) {
-                        try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); return true; } catch (Exception ignored) { return false; }
-                    }
-                    if (url.startsWith("mailto:")) {
-                        try {
-                            Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.parse(url));
-                            startActivity(intent);
-                            return true;
-                        } catch (Exception ignored) { return false; }
-                    }
-                    return false;
+                if (url.startsWith("https://wa.me/") || url.startsWith("https://api.whatsapp.com/")) {
+                    try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); return true; } catch (Exception ignored) { return false; }
                 }
+                if (url.startsWith("mailto:")) {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.parse(url));
+                        startActivity(intent);
+                        return true;
+                    } catch (Exception ignored) { return false; }
+                }
+                if (url.startsWith("http://") || url.startsWith("https://")) return false;
                 try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); return true; } catch (Exception ignored) { return false; }
             }
         });
