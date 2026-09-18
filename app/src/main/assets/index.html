@@ -1425,17 +1425,17 @@ const installBtn=document.getElementById('installBtn'); if(installBtn) installBt
 
 async function boot(){
   try{
-   await initDataStore();
    /*
-    * Security-first startup:
-    * When PIN/Pattern Lock is enabled, create the opaque lock screen BEFORE
-    * rendering the dashboard. This prevents the legacy header/dashboard from
-    * flashing underneath the lock screen during startup.
-    * After successful unlock, the already-rendered dashboard becomes visible
-    * immediately by simply removing #lockScreen.
+    * Security-first startup: use the synchronously loaded local settings to
+    * cover the page before the async IndexedDB check can finish. Then reconcile
+    * with the final datastore state before rendering the dashboard.
     */
+   if(db.settings.securityMode && db.settings.securityMode !== "none") lockOverlay();
+   await initDataStore();
+   if(!db.settings.shop || db.settings.shop==="আমার দোকান") db.settings.shop="Business360";
    const locked = db.settings.securityMode && db.settings.securityMode !== "none";
-   if(locked) lockOverlay();
+   if(locked && !document.getElementById("lockScreen")) lockOverlay();
+   if(!locked) document.getElementById("lockScreen")?.remove();
    render("dashboard");
    if(cloudState.clientId) cloudStatus("Google Drive সংযুক্ত নয় — Connect চাপুন");
   }catch(e){
