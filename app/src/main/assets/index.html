@@ -581,7 +581,7 @@ html[data-appbg="sunsetGlow"] .main{background:radial-gradient(circle at 85% 10%
 </head>
 <body>
 <header class="top">
-<button class="icon" id="menuBtn" aria-label="Menu" type="button" onclick="openSideMenu();return false;">☰</button><div class="brand-wrap"><img id="shopLogo" class="shop-logo" alt="Business360"><div class="brand-stack"><div class="brand" id="brand">আমার দোকান</div><div class="brand-sub">Smart Business Management</div></div></div>
+<button class="icon" id="menuBtn" aria-label="Menu" type="button" onclick="openSideMenu();return false;">☰</button><div class="brand-wrap"><img id="shopLogo" class="shop-logo" alt="Business360"><div class="brand-stack"><div class="brand" id="brand">Business360</div><div class="brand-sub">Smart Business Management</div></div></div>
 <button class="icon" id="themeBtn" title="Background Theme" aria-label="Background Theme" onclick="openThemePicker()">🎨</button><button class="icon" id="filterBtn" title="Filter" onclick="toast('ফিল্টার অপশন মেনু থেকে ব্যবহার করুন')">▽</button><button class="icon" id="notifyBtn" title="Notifications" onclick="page('products');toast('স্টক নোটিফিকেশন দেখুন')">🔔</button>
 </header>
 <div class="layout">
@@ -1426,9 +1426,18 @@ const installBtn=document.getElementById('installBtn'); if(installBtn) installBt
 async function boot(){
   try{
    await initDataStore();
+   /*
+    * Security-first startup:
+    * When PIN/Pattern Lock is enabled, create the opaque lock screen BEFORE
+    * rendering the dashboard. This prevents the legacy header/dashboard from
+    * flashing underneath the lock screen during startup.
+    * After successful unlock, the already-rendered dashboard becomes visible
+    * immediately by simply removing #lockScreen.
+    */
+   const locked = db.settings.securityMode && db.settings.securityMode !== "none";
+   if(locked) lockOverlay();
    render("dashboard");
    if(cloudState.clientId) cloudStatus("Google Drive সংযুক্ত নয় — Connect চাপুন");
-   lockOverlay();
   }catch(e){
    document.getElementById("dashboard").innerHTML=`<div class="card"><h2>অ্যাপ চালু হতে সমস্যা হয়েছে</h2><p>${esc(e.message||e)}</p><button class="btn" onclick="location.reload()">আবার চেষ্টা করুন</button></div>`;
   }
