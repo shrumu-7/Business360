@@ -1316,11 +1316,13 @@ function translateVisibleText(){
 }
 function applyLanguage(lang,rerender=true){
  if(!db.settings)db.settings={};
- db.settings.language=lang==="en"?"en":"bn";try{localStorage.setItem(LANG_KEY,db.settings.language)}catch(_){ }try{save()}catch(_){ }
+ db.settings.language=lang==="en"?"en":"bn";
+ try{localStorage.setItem(LANG_KEY,db.settings.language)}catch(_){ }
+ try{save()}catch(_){ }
  document.documentElement.lang=db.settings.language==="en"?"en":"bn";
  document.title=db.settings.language==="en"?"Business360 — Complete Business Management":"Business360 — সম্পূর্ণ দোকান ব্যবস্থাপনা";
- __langRestore();
- if(rerender){const active=document.querySelector(".page.active");render(active&&active.id||"dashboard");}
+ /* Rebuild the whole legacy UI from source so every screen, menu, modal and dynamic label uses the selected language. */
+ location.reload();
 }
 function languageModal(){modal('<div class="modalhead"><div><h2 style="margin:0">🌐 Language Settings</h2><div class="sub">Choose the app language</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="grid g2"><button class="btn" type="button" onclick="applyLanguage(\'bn\');closeModal()">🇧🇩 বাংলা</button><button class="btn" type="button" onclick="applyLanguage(\'en\');closeModal()">🇬🇧 English</button></div>');}
 function settingsPageBase(){document.getElementById("settings").innerHTML=`<div class="title"><div><h1>সেটিংস</h1><div class="sub">দোকানের তথ্য, Background থিম, লোগো, Lock ও Backup</div></div><div class="toolbar"></div></div>
