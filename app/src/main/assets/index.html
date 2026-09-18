@@ -688,7 +688,7 @@ const initial={
  counters:{sale:1001,purchase:2001,return:3001}
 };
 let db=load(), saleCart=[], purchaseCart=[];
-function load(){try{const x=JSON.parse(localStorage.getItem(KEY));return migrateData(x||initial)}catch(e){return clone(initial)}}
+function load(){try{const x=JSON.parse(localStorage.getItem(KEY));const d=migrateData(x||initial);if(!d.settings.shop||d.settings.shop==="আমার দোকান")d.settings.shop="Business360";return d}catch(e){return clone(initial)}}
 function idbOpen(){return new Promise((resolve,reject)=>{if(!window.indexedDB)return resolve(null);const r=indexedDB.open(IDB_NAME,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(IDB_STORE))r.result.createObjectStore(IDB_STORE)};r.onsuccess=()=>resolve(r.result);r.onerror=()=>resolve(null)})}
 function idbGet(){return idbOpen().then(dbx=>new Promise(resolve=>{if(!dbx)return resolve(null);const tx=dbx.transaction(IDB_STORE,"readonly"),q=tx.objectStore(IDB_STORE).get("db");q.onsuccess=()=>resolve(q.result||null);q.onerror=()=>resolve(null)}))}
 function idbPut(value){return idbOpen().then(dbx=>new Promise(resolve=>{if(!dbx)return resolve(false);const tx=dbx.transaction(IDB_STORE,"readwrite");tx.objectStore(IDB_STORE).put(value,"db");tx.oncomplete=()=>{dbx.close();resolve(true)};tx.onerror=()=>{dbx.close();resolve(false)}}))}
@@ -1295,7 +1295,15 @@ const BN_EN_PHRASES={"সেটিংস":"Settings","ভাষা সেটি�
 function currentLang(){return (db&&db.settings&&db.settings.language)||localStorage.getItem(LANG_KEY)||"bn";}
 function translateBnToEn(text){let out=text;Object.keys(BN_EN_PHRASES).sort((a,b)=>b.length-a.length).forEach(k=>{out=out.split(k).join(BN_EN_PHRASES[k]);});return out;}
 function translateVisibleText(){if(currentLang()!=="en")return;const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT),a=[];let n;while(n=w.nextNode())a.push(n);a.forEach(x=>{if(x.parentElement&&x.parentElement.closest("script,style,svg"))return;if(/[\u0980-\u09FF]/.test(x.nodeValue))x.nodeValue=translateBnToEn(x.nodeValue)});document.querySelectorAll("input[placeholder],textarea[placeholder],input[title],button[title],a[title],option").forEach(el=>["placeholder","title"].forEach(k=>{if(el.hasAttribute(k)&&/[\u0980-\u09FF]/.test(el.getAttribute(k)))el.setAttribute(k,translateBnToEn(el.getAttribute(k)))}));document.querySelectorAll("option").forEach(el=>{if(/[\u0980-\u09FF]/.test(el.textContent))el.textContent=translateBnToEn(el.textContent)});}
-function applyLanguage(lang,rerender=true){if(!db.settings)db.settings={};db.settings.language=lang==="en"?"en":"bn";try{localStorage.setItem(LANG_KEY,db.settings.language)}catch(_){}try{save()}catch(_){}document.documentElement.lang=db.settings.language==="en"?"en":"bn";document.title=db.settings.language==="en"?"Business360 — Complete Business Management":"Business360 — সম্পূর্ণ দোকান ব্যবস্থাপনা";if(rerender){const active=document.querySelector(".page.active");render(active&&active.id||"dashboard");}};db.settings.language=lang==="en"?"en":"bn";localStorage.setItem(LANG_KEY,db.settings.language);document.documentElement.lang=db.settings.language==="en"?"en":"bn";document.title=db.settings.language==="en"?"Business360 — Complete Business Management":"Business360 — সম্পূর্ণ দোকান ব্যবস্থাপনা";if(rerender){const active=document.querySelector(".page.active");render(active&&active.id||"dashboard");}}
+function applyLanguage(lang,rerender=true){
+ if(!db.settings)db.settings={};
+ db.settings.language=lang==="en"?"en":"bn";
+ try{localStorage.setItem(LANG_KEY,db.settings.language)}catch(_){}
+ try{save()}catch(_){}
+ document.documentElement.lang=db.settings.language==="en"?"en":"bn";
+ document.title=db.settings.language==="en"?"Business360 — Complete Business Management":"Business360 — সম্পূর্ণ দোকান ব্যবস্থাপনা";
+ if(rerender){const active=document.querySelector(".page.active");render(active&&active.id||"dashboard");}
+}
 function languageModal(){modal('<div class="modalhead"><div><h2 style="margin:0">🌐 Language Settings</h2><div class="sub">Choose the app language</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="grid g2"><button class="btn" onclick="applyLanguage(&quot;bn&quot;);closeModal()">🇧🇩 বাংলা</button><button class="btn" onclick="applyLanguage(&quot;en&quot;);closeModal()">🇬🇧 English</button></div>');}
 
 function settingsPageBase(){document.getElementById("settings").innerHTML=`<div class="title"><div><h1>সেটিংস</h1><div class="sub">দোকানের তথ্য, Background থিম, লোগো, Lock ও Backup</div></div><div class="toolbar"></div></div>
