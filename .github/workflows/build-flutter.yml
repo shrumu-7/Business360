@@ -38,8 +38,12 @@ jobs:
           set -e
           python3 - <<'PY'
           from pathlib import Path
+          import re
           p = Path('android/app/build.gradle.kts')
           s = p.read_text()
+          # Disable all code/resource shrinking in the generated release config.
+          s = re.sub(r'isMinifyEnabled\s*=\s*true', 'isMinifyEnabled = false', s)
+          s = re.sub(r'isShrinkResources\s*=\s*true', 'isShrinkResources = false', s)
           if 'isMinifyEnabled = false' not in s:
               start = s.find('buildTypes {')
               if start < 0:
@@ -47,7 +51,8 @@ jobs:
               depth = 0
               insert_at = None
               for i in range(start, len(s)):
-                  if s[i] == '{': depth += 1
+                  if s[i] == '{':
+                      depth += 1
                   elif s[i] == '}':
                       depth -= 1
                       if depth == 0:
@@ -55,13 +60,39 @@ jobs:
                           break
               if insert_at is None:
                   raise SystemExit('Could not parse buildTypes block')
-              # Put release config immediately before the closing brace.
-              addition = '        getByName("release") {\n            isMinifyEnabled = false\n        }\n'
+              addition = '''        getByName("release") {
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
+'''
               s = s[:insert_at] + addition + s[insert_at:]
-              p.write_text(s)
+          elif 'isShrinkResources = false' not in s:
+              start = s.find('buildTypes {')
+              if start >= 0:
+                  depth = 0
+                  insert_at = None
+                  for i in range(start, len(s)):
+                      if s[i] == '{':
+                          depth += 1
+                      elif s[i] == '}':
+                          depth -= 1
+                          if depth == 0:
+                              insert_at = i
+                              break
+                  if insert_at is not None:
+                      addition = '''        getByName("release") {
+            isShrinkResources = false
+        }
+'''
+                      s = s[:insert_at] + addition + s[insert_at:]
+          p.write_text(s)
+          echo "Final Android release shrink settings:"
+          grep -n -E 'is(MinifyEnabled|ShrinkResources)' android/app/build.gradle.kts || true
+          if grep -Eq 'isShrinkResources[[:space:]]*=[[:space:]]*true|isMinifyEnabled[[:space:]]*=[[:space:]]*true' android/app/build.gradle.kts; then
+            echo "ERROR: release shrinking is still enabled"
+            exit 1
+          fi
           PY
-          sed -i 's/isShrinkResources = true/isShrinkResources = false/g' android/app/build.gradle.kts
-          grep -n -A6 -B2 'isMinifyEnabled = false' android/app/build.gradle.kts
       - name: Apply Business360 launcher icon
         run: |
           set -e
@@ -95,10 +126,7 @@ jobs:
         working-directory: .
         run: |
           set -e
-          zip -r -9 Business360-Flutter-Project-${{ github.run_number }}.zip business360_flutter \
-            -x 'business360_flutter/.dart_tool/*' \
-               'business360_flutter/build/*' \
-               'business360_flutter/.git/*'
+          zip -r -9 Business360-Flutter-Project-${{ github.run_number }}.zip business360_flutter             -x 'business360_flutter/.dart_tool/*'                'business360_flutter/build/*'                'business360_flutter/.git/*'
       - name: Upload complete package
         uses: actions/upload-artifact@v4
         with:
