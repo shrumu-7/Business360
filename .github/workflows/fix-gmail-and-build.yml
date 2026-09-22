@@ -53,6 +53,8 @@ jobs:
           grep -q 'Md Sahadul Hoque Rumu' "$f"
           grep -q 'mailto:shrumu7@gmail.com' "$f"
           grep -q 'wa.me/8801795934394' "$f"
+          grep -q 'Never turn existing inventory into zero' "$f"
+          grep -q 'requestedStock===null' "$f"
           grep -q 'Final About contrast and icon-only contacts' "$f"
           ! grep -q '<b>WhatsApp</b>' "$f"
           ! grep -q '<b>Gmail</b>' "$f"
