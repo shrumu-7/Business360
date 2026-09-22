@@ -50,9 +50,9 @@ jobs:
       - name: Run Flutter tests
         run: flutter test
       - name: Build Android APKs
-        run: flutter build apk --release --split-per-abi
+        run: flutter build apk --release --no-shrink --split-per-abi
       - name: Build Android App Bundle
-        run: flutter build appbundle --release
+        run: flutter build appbundle --release --no-shrink
       - name: Verify Android artifacts
         run: |
           set -e
