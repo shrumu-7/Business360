@@ -1,4 +1,5 @@
 name: Build Business360 Flutter Package
+# Smart Stock verification build
 
 on:
   workflow_dispatch:
