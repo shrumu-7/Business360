@@ -39,7 +39,11 @@
 @media(max-width:520px){.product-list-card{padding:13px 10px}.product-list-name{font-size:16px}.product-list-data{padding-left:0;grid-template-columns:1fr 1fr 1fr}.product-list-actions{margin-left:0}.product-list-actions .btn{flex:1;min-width:0;padding:8px 7px}}
 
 
-/* V25 dark-safe surfaces: prevent white panels from hiding text */
+
+/* Product form save button: always fully visible and tappable on small screens */
+.modal-save-btn{display:block!important;width:100%!important;min-height:48px!important;margin:14px 0 2px!important;box-sizing:border-box!important;position:sticky!important;bottom:0!important;z-index:3!important;white-space:nowrap!important}
+@media(max-width:520px){.modal{padding:16px!important;max-height:calc(100vh - 24px)!important}.modal-save-btn{font-size:16px!important;padding:12px 14px!important;border-radius:12px!important}.modal .formrow,.modal .formrow3{grid-template-columns:1fr!important}}
+\n/* V25 dark-safe surfaces: prevent white panels from hiding text */
 .modal{background:var(--panel-bg,#111522)!important;color:var(--panel-text,#f7f8ff)!important;border:1px solid var(--panel-line,#ffffff2b);box-shadow:0 22px 60px #00000066}
 .modal h1,.modal h2,.modal h3,.modal h4,.modal b,.modal strong,.modal label,.modal .sub{color:var(--panel-text,#f7f8ff)}
 .modal .sub{opacity:.78}
@@ -1229,7 +1233,7 @@ function openProductForm(id=""){const p=db.products.find(x=>x.id===id)||{name:""
  <div class="formrow"><div class="field"><label>ক্রয়মূল্য *</label><input id="pfCost" class="input" type="number" min="0" step=".01" value="${p.costPrice}"></div><div class="field"><label>বিক্রয়মূল্য *</label><input id="pfSale" class="input" type="number" min="0" step=".01" value="${p.salePrice}"></div></div>
  ${id?`<div class="field"><label>বর্তমান স্টক</label><input id="pfStock" class="input" type="number" min="0" value="${p.stock}"></div>`:`<div class="field"><label>Opening Stock</label><input id="pfStock" class="input" type="number" min="0" value="0"></div>`}
  <div class="field"><label>বর্ণনা</label><textarea id="pfDesc" class="textarea">${esc(p.description||"")}</textarea></div>
- <button id="saveProductBtn" class="btn" onclick="saveProduct('${id}')">💾 সেভ করুন</button>`);
+ <button id="saveProductBtn" class="btn modal-save-btn" type="button" onclick="saveProduct('${id}')">💾 সেভ করুন</button>`);
 }
 function saveProduct(id){
  if(savingProduct)return;
