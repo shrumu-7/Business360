@@ -41,13 +41,10 @@ jobs:
           p = Path('android/app/build.gradle.kts')
           s = p.read_text()
           if 'isMinifyEnabled = false' not in s:
-              target = '        create("release") {\n'
-              if target not in s:
-                  raise SystemExit('Could not find release build type in generated Gradle file')
-              s = s.replace(target, target + '            isMinifyEnabled = false\n', 1)
+              s = s.replace('buildTypes {', 'buildTypes {\n        getByName("release") {\n            isMinifyEnabled = false\n        }', 1)
               p.write_text(s)
           PY
-          grep -n -A4 -B2 'create("release")' android/app/build.gradle.kts
+          grep -n -A6 -B2 'isMinifyEnabled = false' android/app/build.gradle.kts
       - name: Apply Business360 launcher icon
         run: |
           set -e
