@@ -56,7 +56,7 @@ jobs:
               if insert_at is None:
                   raise SystemExit('Could not parse buildTypes block')
               # Put release config immediately before the closing brace.
-              addition = '        getByName("release") {\\n            isMinifyEnabled = false\\n        }\\n'
+              addition = '        getByName("release") {\n            isMinifyEnabled = false\n        }\n'
               s = s[:insert_at] + addition + s[insert_at:]
               p.write_text(s)
           PY
