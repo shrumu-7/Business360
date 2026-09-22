@@ -1185,7 +1185,7 @@ function productNameCompare(a,b,mode){
 }
 function productsPage(){
  document.getElementById("products").innerHTML=`<div class="title"><div><h1>পণ্য / স্টক</h1><div class="sub">নাম অনুযায়ী A–Z, Z–A অথবা অ–য় ক্রমে সাজানো যাবে</div></div><button class="btn" onclick="openProductForm()">＋ নতুন পণ্য</button></div>
- <div class="card product-shell"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>পণ্য তালিকার Background</b><div class="theme-panel-inline">${[["auto","থিম"],["white","সাদা"],["gray","ধূসর"],["black","কালো"],["purple","পার্পল"],["blue","নীল"],["green","সবুজ"]].map(x=>`<button class="theme-chip ${db.settings.productBg===x[0]?'active':''}" onclick="applyProductBg('${x[0]}');productsPage()">${x[1]}</button>`).join('')}</div></div><div class="toolbar"><input id="prodSearch" class="input search" placeholder="নাম / Barcode খুঁজুন"><select id="catFilter" class="select search"><option value="">সব Category</option>${[...new Set(db.products.map(p=>p.category).filter(Boolean))].map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("")}</select><select id="prodSort" class="select search"><option value="az">English A–Z</option><option value="za">English Z–A</option><option value="bn">বাংলা অ–য়</option><option value="nb">বাংলা য়–অ</option></select><button class="btn secondary" onclick="exportProducts()">CSV Export</button></div>
+ <div class="card product-shell"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>পণ্য তালিকার Background</b><div class="theme-panel-inline">${[["auto","থিম"],["white","সাদা"],["gray","ধূসর"],["black","কালো"],["purple","পার্পল"],["blue","নীল"],["green","সবুজ"]].map(x=>`<button class="theme-chip ${db.settings.productBg===x[0]?'active':''}" onclick="applyProductBg('${x[0]}');productsPage()">${x[1]}</button>`).join('')}</div></div><div class="toolbar"><input id="prodSearch" class="input search" placeholder="নাম / Barcode খুঁজুন"><select id="catFilter" class="select search"><option value="">সব Category</option>${[...new Set(db.products.map(p=>p.category).filter(Boolean))].map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("")}</select><select id="prodSort" class="select search"><option value="az">English A–Z</option><option value="za">English Z–A</option><option value="bn">বাংলা অ–য়</option><option value="nb">বাংলা য়–অ</option></select><button class="btn secondary" onclick="smartStockImport()">📷 Smart Stock Import</button><button class="btn secondary" onclick="exportProducts()">CSV Export</button></div>
  <div class="tablewrap section"><table class="table"><thead><tr><th>পণ্য</th><th>Barcode</th><th>Category</th><th>ক্রয়মূল্য</th><th>বিক্রয়মূল্য</th><th>স্টক</th><th>স্টক মূল্য</th><th>Action</th></tr></thead><tbody id="prodBody"></tbody></table></div><div id="prodMobile" class="section"></div></div>`;
  const draw=()=>{
    const q=(document.getElementById('prodSearch').value||'').trim().toLowerCase(), cat=document.getElementById('catFilter').value||'', sort=document.getElementById('prodSort').value||'az';
@@ -1217,6 +1217,65 @@ function productsPage(){
  document.getElementById('catFilter').addEventListener('change',draw);document.getElementById('prodSort').addEventListener('change',draw);draw();
 }
 
+function smartStockImport(){
+ if(!window.Business360Stock){toast('Smart Stock Import চালু করা যাচ্ছে না');return}
+ window.Business360Stock.pickImage();
+ toast('Camera অথবা Gallery থেকে Product List-এর ছবি নির্বাচন করুন');
+}
+window.onStockOcrResult=function(text){
+ if(!text||!String(text).trim()){toast('ছবির লেখা পড়া যায়নি। পরিষ্কার screenshot/photo দিন।');return}
+ const rows=parseStockOcr(String(text));
+ if(!rows.length){toast('কোনো product row শনাক্ত হয়নি।');return}
+ showStockImportPreview(rows);
+};
+function parseStockOcr(text){
+ const rows=[];
+ for(const raw of text.split(/\r?\n/)){
+   const line=raw.replace(/\s+/g,' ').trim();
+   if(!line)continue;
+   const ms=[...line.matchAll(/(?<![A-Za-z])\d+(?:[.,]\d+)?/g)];
+   if(ms.length<3)continue;
+   const first=ms[0];
+   let name=line.slice(0,first.index).replace(/[-|:]+$/,'').trim();
+   if(name.length<2)continue;
+   const low=name.toLowerCase();
+   if(/^(product|name|price|selling|purchase|cost|stock|quantity|item|barcode)/.test(low))continue;
+   const nums=ms.map(m=>Number(m[0].replace(',','.'))).filter(Number.isFinite);
+   if(nums.length<3)continue;
+   rows.push({name,cost:nums[nums.length-3],sale:nums[nums.length-2],stock:nums[nums.length-1],unit:'pcs'});
+ }
+ return rows;
+}
+function showStockImportPreview(rows){
+ const body=rows.map((r,i)=>`<div class="card" style="margin-bottom:10px"><div class="sub">Product ${i+1}</div>
+ <div class="field"><label>পণ্যের নাম</label><input class="input" id="impName${i}" value="${esc(r.name)}"></div>
+ <div class="formrow3"><div class="field"><label>ক্রয়মূল্য</label><input class="input" type="number" id="impCost${i}" value="${r.cost}"></div>
+ <div class="field"><label>বিক্রয়মূল্য</label><input class="input" type="number" id="impSale${i}" value="${r.sale}"></div>
+ <div class="field"><label>স্টক</label><input class="input" type="number" id="impStock${i}" value="${r.stock}"></div></div>
+ <div class="field"><label>Unit</label><input class="input" id="impUnit${i}" value="${esc(r.unit)}"></div></div>`).join('');
+ modal(`<div class="modalhead"><div><h2 style="margin:0">Smart Stock Import</h2><div class="sub">OCR ফলাফল যাচাই করে তারপর Stock-এ যোগ করুন</div></div><button class="close" onclick="closeModal()">×</button></div>
+ <div class="notice" style="margin-bottom:12px">OCR ভুল পড়তে পারে—Save করার আগে নাম, দাম ও Stock যাচাই করুন।</div>
+ <div style="max-height:58vh;overflow:auto">${body}</div>
+ <div class="toolbar" style="justify-content:flex-end;margin-top:12px"><button class="btn gray" onclick="closeModal()">Cancel</button><button class="btn ok" onclick="confirmStockImport(${rows.length})">✓ Confirm & Add to Stock</button></div>`);
+}
+function normalizeProductName(v){return String(v||'').trim().toLowerCase().replace(/\s+/g,' ');}
+function confirmStockImport(n){
+ const imported=[];
+ for(let i=0;i<n;i++){
+   const name=(document.getElementById('impName'+i)?.value||'').trim();
+   if(!name)continue;
+   imported.push({name,cost:num(document.getElementById('impCost'+i)?.value),sale:num(document.getElementById('impSale'+i)?.value),stock:Math.max(0,num(document.getElementById('impStock'+i)?.value)),unit:(document.getElementById('impUnit'+i)?.value||'pcs').trim()||'pcs'});
+ }
+ if(!imported.length){toast('কোনো valid product নেই');return}
+ let added=0,merged=0;
+ imported.forEach(r=>{
+   const key=normalizeProductName(r.name);
+   let p=db.products.find(x=>normalizeProductName(x.name)===key);
+   if(p){p.stock=(Number(p.stock)||0)+r.stock;if(r.cost>0)p.costPrice=r.cost;if(r.sale>0)p.salePrice=r.sale;if(r.unit)p.unit=r.unit;addMove(p.id,r.stock,'IMPORT','SMART IMPORT');merged++}
+   else{p={id:uid('PR'),name:r.name,barcode:'',category:'',unit:r.unit,reorder:0,costPrice:r.cost,salePrice:r.sale,stock:r.stock,description:''};db.products.push(p);if(r.stock)addMove(p.id,r.stock,'IMPORT','SMART IMPORT');added++}
+ });
+ save();closeModal();render('products');toast('✓ '+added+'টি নতুন, '+merged+'টি existing product-এর stock যোগ হয়েছে');
+}
 function openProductDetail(id){const p=db.products.find(x=>x.id===id);if(!p){toast('পণ্য পাওয়া যায়নি');return}document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById('productDetail').classList.add('active');document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.page==='products'));document.getElementById('side').classList.remove('open');
  const sold=db.sales.flatMap(s=>s.items.map(i=>({...i,date:s.date,invoice:s.invoice}))).filter(i=>i.productId===id);const bought=db.purchases.flatMap(s=>s.items.map(i=>({...i,date:s.date,invoice:s.invoice}))).filter(i=>i.productId===id);const moves=db.stockMoves.filter(m=>m.productId===id).slice().reverse().slice(0,20);const potential=p.stock*p.salePrice;const stockValue=p.stock*p.costPrice;const profitPer=p.salePrice-p.costPrice;
  document.getElementById('productDetail').innerHTML=`<div class="title"><div><button class="btn gray sm" onclick="page('products')">← পণ্য তালিকা</button><h1 style="margin-top:10px">${esc(p.name)}</h1><div class="sub">${esc(p.barcode||'Barcode নেই')} · ${esc(p.category||'কোনো Category নেই')}</div></div><div class="toolbar"><button class="btn secondary" onclick="openProductForm('${p.id}')">Edit</button><button class="btn gray" onclick="manualProductBackup('${p.id}')">💾 Backup</button><button class="btn stock-zero" onclick="zeroProductStock('${p.id}')">স্টক 0</button><button class="btn danger-outline" onclick="deleteProduct('${p.id}')">Delete</button><button class="btn" onclick="page('sale');setTimeout(()=>addSale('${p.id}'),0)">বিক্রি করুন</button></div></div>
