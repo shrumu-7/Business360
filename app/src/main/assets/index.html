@@ -1240,8 +1240,23 @@ function saveProduct(id){
  const btn=document.getElementById("saveProductBtn");
  const name=document.getElementById("pfName").value.trim();if(!name){toast("পণ্যের নাম দিন");return}
  savingProduct=true;if(btn){btn.disabled=true;btn.textContent="⏳ সেভ হচ্ছে..."}
- const cost=num(document.getElementById("pfCost").value),sale=num(document.getElementById("pfSale").value),stock=Math.max(0,num(document.getElementById("pfStock").value));let p=db.products.find(x=>x.id===id);
- if(p){const old=p.stock;p.name=name;p.barcode=document.getElementById("pfBarcode").value.trim();p.category=document.getElementById("pfCat").value.trim();p.unit=document.getElementById("pfUnit").value;p.reorder=num(document.getElementById("pfReorder").value);p.costPrice=cost;p.salePrice=sale;p.stock=stock;p.description=document.getElementById("pfDesc").value;if(old!==stock)addMove(p.id,stock-old,"ADJUST","MANUAL")}
+ const cost=num(document.getElementById("pfCost").value),sale=num(document.getElementById("pfSale").value);
+ const stockField=document.getElementById("pfStock");
+ const stockText=stockField?String(stockField.value??"").trim():"";
+ const requestedStock=stockText===""?null:Math.max(0,num(stockText));
+ let p=db.products.find(x=>x.id===id);
+ if(p){
+   /*
+    * Never turn existing inventory into zero just because the stock field is
+    * blank during an app/UI update. Existing stock changes only when the user
+    * explicitly enters a number.
+    */
+   const old=Number(p.stock)||0;
+   p.name=name;p.barcode=document.getElementById("pfBarcode").value.trim();p.category=document.getElementById("pfCat").value.trim();p.unit=document.getElementById("pfUnit").value;p.reorder=num(document.getElementById("pfReorder").value);p.costPrice=cost;p.salePrice=sale;
+   if(requestedStock!==null){p.stock=requestedStock;if(old!==requestedStock)addMove(p.id,requestedStock-old,"ADJUST","MANUAL")}
+   else p.stock=old;
+   p.description=document.getElementById("pfDesc").value;
+ }
  else{p={id:uid("PR"),name,barcode:document.getElementById("pfBarcode").value.trim(),category:document.getElementById("pfCat").value.trim(),unit:document.getElementById("pfUnit").value,reorder:num(document.getElementById("pfReorder").value),costPrice:cost,salePrice:sale,stock,description:document.getElementById("pfDesc").value};db.products.push(p);if(stock)addMove(p.id,stock,"OPENING","OPENING")}
  save();closeModal();render("products");savingProduct=false;toast("✓ পণ্য সেভ হয়েছে");
 }
