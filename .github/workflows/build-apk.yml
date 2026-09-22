@@ -1,3 +1,4 @@
+# Build workflow — unchanged build logic; this commit intentionally triggers a fresh verified APK build.
 name: Build Business360 APK
 
 on:
