@@ -33,6 +33,21 @@ jobs:
         run: flutter --version
       - name: Generate Android and iOS platforms
         run: flutter create --platforms=android,ios --project-name business360 .
+      - name: Disable Android release minification for ML Kit compatibility
+        run: |
+          set -e
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('android/app/build.gradle.kts')
+          s = p.read_text()
+          if 'isMinifyEnabled = false' not in s:
+              target = '        create("release") {\n'
+              if target not in s:
+                  raise SystemExit('Could not find release build type in generated Gradle file')
+              s = s.replace(target, target + '            isMinifyEnabled = false\n', 1)
+              p.write_text(s)
+          PY
+          grep -n -A4 -B2 'create("release")' android/app/build.gradle.kts
       - name: Apply Business360 launcher icon
         run: |
           set -e
