@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -15,104 +15,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Apply final legacy UI fixes
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-
-          p = Path('app/src/main/assets/index.html')
-          s = p.read_text(encoding='utf-8')
-
-          # Keep the existing legacy All Theme architecture, but make its Settings button idempotent.
-          if 'function settingsPageBase(){' not in s:
-              s = s.replace('function settingsPage(){', 'function settingsPageBase(){', 1)
-
-          if 'function openAllTheme(){' not in s:
-              helper = r'''function __themeCard(c){
-            const h=(c.innerHTML||'').toLowerCase();
-            return h.includes('theme-grid') || h.includes('button-theme-grid') || h.includes('premium-color-list') || h.includes('theme-panel-inline') || h.includes('applytheme(') || h.includes('applyappbackground(') || h.includes('applybuttontheme(') || h.includes('applypanelbg(') || h.includes('applyproductbg(') || h.includes('dashboardbg') || h.includes('dashboardcardbg') || h.includes('dashboardborder') || h.includes('dashboardcardcolors') || h.includes('থিম') || h.includes('ব্যাকগ্রাউন্ড') || h.includes('কালার') || h.includes('রং');
-          }
-          function __removeThemeHeaderControls(root){
-            root.querySelectorAll('[onclick*="openThemePicker"],.title .toolbar button').forEach(el=>{
-              const t=(el.textContent||'').trim().toLowerCase();
-              const oc=(el.getAttribute('onclick')||'');
-              if(t.includes('থিম') || t.includes('all theme') || oc.includes('openThemePicker')) el.remove();
-            });
-          }
-          function openAllTheme(){
-            settingsPageBase();
-            const root=document.getElementById('settings');
-            const cards=[...root.querySelectorAll('.card')].filter(__themeCard);
-            if(!cards.length){ toast('All Theme options পাওয়া যায়নি'); return; }
-            const body=cards.map(c=>c.outerHTML.replace(/settingsPage\(\)/g,'closeModal();settingsPage()')).join('');
-            modal(`<div class="modalhead"><div><h2 style="margin:0">🎨 All Theme</h2><div class="theme-current">সব কালার ও থিম পরিবর্তনের অপশন</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="theme-help">সব Theme, App Background, Dashboard, Button, Card, Border, Panel ও Product Background option এখানে থাকবে।</div>${body}`);
-          }
-          function settingsPage(){
-            settingsPageBase();
-            const root=document.getElementById('settings');
-            __removeThemeHeaderControls(root);
-            [...root.querySelectorAll('.card')].forEach(c=>{if(__themeCard(c))c.remove();});
-            const title=root.querySelector('.title');
-            if(title){
-              let tb=title.querySelector('.toolbar');
-              if(!tb){tb=document.createElement('div');tb.className='toolbar';title.appendChild(tb);}
-              title.querySelectorAll('button[data-all-theme]').forEach(x=>x.remove());
-              const b=document.createElement('button');
-              b.setAttribute('data-all-theme','1');
-              b.className='btn secondary';b.type='button';b.textContent='🎨 All Theme';b.onclick=openAllTheme;tb.appendChild(b);
-            }
-          }
-          '''
-              anchor='function aboutPage(){'
-              if anchor not in s:
-                  raise SystemExit('aboutPage missing')
-              s=s.replace(anchor, helper+anchor, 1)
-
-          # Remove any old visible theme-picker buttons.
-          s=re.sub(r'<button[^>]*onclick="openThemePicker\(\)"[^>]*>\s*🎨\s*(?:থিম পরিবর্তন|All Theme)\s*</button>', '', s, flags=re.S)
-
-          # About: icon-only WhatsApp and real Gmail M icon; preserve the user's identity text.
-          wa = '''<a href="https://wa.me/8801795934394" aria-label="WhatsApp" title="WhatsApp" class="about-contact-icon" style="display:inline-grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#25D366;color:#fff;text-decoration:none;box-shadow:0 3px 10px #25D36655"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#fff"/><path fill="#25D366" d="M16 5.2A10.8 10.8 0 0 0 6.7 21.5L5.2 26.8l5.4-1.4A10.8 10.8 0 1 0 16 5.2Zm0 2.2a8.6 8.6 0 1 1-4.4 16l-.7-.4-2.7.7.7-2.6-.4-.7A8.6 8.6 0 0 1 16 7.4Zm-3.1 3.9c-.3 0-.6.1-.8.4-.2.3-.8.8-.8 2 0 1.2.8 2.4.9 2.6.1.2 1.6 2.6 4 3.6 2 .8 2.4.6 2.9.6.5-.1 1.6-.6 1.8-1.2.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.7-.4l-1.5-.7c-.4-.1-.6-.2-.8.2l-.6.9c-.2.3-.3.3-.7.1-.4-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.2-.7l.5-.6c.2-.2.2-.4.3-.6.1-.2 0-.4-.1-.6l-.6-1.5c-.2-.4-.4-.4-.8-.4Z"/></svg></a>'''
-          gmail = '''<a href="googlegmail://co?to=shrumu7@gmail.com" aria-label="Gmail" title="Gmail" class="about-contact-icon" style="display:inline-grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid #d9dce5;text-decoration:none;box-shadow:0 3px 10px #00000014"><svg viewBox="0 0 40 30" width="30" height="24" aria-hidden="true"><rect x="1" y="1" width="38" height="28" rx="4" fill="#fff"/><path fill="#EA4335" d="M3 4.5 20 17 37 4.5V27H33V10.8L20 20.3 7 10.8V27H3Z"/><path fill="#C5221F" d="M3 4.5 20 17 37 4.5 34.2 2 20 12.5 5.8 2Z"/></svg></a>'''
-
-          # Replace any existing contact anchors regardless of their current inner icon/text.
-          s = re.sub(r'<a\b[^>]*href="https://wa\.me/8801795934394"[^>]*>.*?</a>', wa, s, count=1, flags=re.S)
-          s = re.sub(r'<a\b[^>]*href="googlegmail://co\?to=shrumu7@gmail\.com"[^>]*>.*?</a>', gmail, s, count=1, flags=re.S)
-          s = re.sub(r'<a\b[^>]*href="mailto:shrumu7@gmail\.com"[^>]*>.*?</a>', gmail, s, count=1, flags=re.S)
-
-          # Ensure About's white cards always have readable dark text; identity content is untouched.
-          css = '''\n/* Final About contrast + contact icon fix */\n#about .card{background:#fff!important;color:#24233a!important;border-color:#e3e5ee!important}\n#about .card h1,#about .card h2,#about .card h3,#about .card h4,#about .card b,#about .card strong,#about .card p,#about .card span,#about .card div,#about .card label{color:#24233a!important}\n#about .card .sub,#about .card small{color:#5e5b6d!important}\n#about .about-contact-icon,#about .about-contact-icon svg{color:inherit}\n'''
-          if 'Final About contrast + contact icon fix' not in s:
-              s=s.replace('</style>', css+'</style>', 1)
-
-          p.write_text(s, encoding='utf-8')
-          PY
-
-      - name: Verify source
+      - name: Verify legacy source before build
         shell: bash
         run: |
           set -euo pipefail
           f=app/src/main/assets/index.html
+          test -f "$f"
           test "$(grep -o 'function settingsPageBase(){' "$f" | wc -l)" -eq 1
           test "$(grep -o 'function settingsPage(){' "$f" | wc -l)" -eq 1
           test "$(grep -o 'function openAllTheme(){' "$f" | wc -l)" -eq 1
-          test "$(grep -o 'function __themeCard(c){' "$f" | wc -l)" -eq 1
-          test "$(grep -o 'data-all-theme' "$f" | wc -l)" -ge 1
-          grep -q 'about-contact-icon' "$f"
-          grep -q '25D366' "$f"
-          grep -q 'EA4335' "$f"
-          grep -q 'Final About contrast + contact icon fix' "$f"
-          grep -q 'googlegmail://co?to=shrumu7@gmail.com' "$f"
+          grep -q '<div class="brand" id="brand">Business360</div>' "$f"
+          grep -q 'Security-first startup' "$f"
+          grep -q 'function lockOverlay(){' "$f"
+          grep -q 'product-list-card' "$f"
+          grep -q 'product-list-name' "$f"
+          grep -q 'mailto:shrumu7@gmail.com' "$f"
           grep -q 'wa.me/8801795934394' "$f"
           grep -q 'Md Sahadul Hoque Rumu' "$f"
-          grep -q 'applyProductBg' "$f"
-          grep -q 'applyPanelBg' "$f"
-          grep -q 'applyButtonTheme' "$f"
-          grep -q 'applyAppBackground' "$f"
           grep -q 'applyTheme' "$f"
+          grep -q 'applyAppBackground' "$f"
+          grep -q 'applyProductBg' "$f"
+          grep -q 'applyDashboardStyle' "$f"
+          grep -q 'applyButtonTheme' "$f"
+          grep -q 'applyPanelBg' "$f"
+          echo "LEGACY SOURCE VERIFIED"
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -128,7 +54,7 @@ jobs:
       - name: Build legacy Business360 APK
         run: gradle --no-daemon clean assembleDebug --stacktrace
 
-      - name: Verify packaged APK
+      - name: Verify packaged legacy APK
         shell: bash
         run: |
           set -euo pipefail
@@ -139,24 +65,19 @@ jobs:
           test "$(grep -o 'function settingsPageBase(){' "$f" | wc -l)" -eq 1
           test "$(grep -o 'function settingsPage(){' "$f" | wc -l)" -eq 1
           test "$(grep -o 'function openAllTheme(){' "$f" | wc -l)" -eq 1
-          test "$(grep -o 'data-all-theme' "$f" | wc -l)" -ge 1
-          test "$(grep -o 'about-contact-icon' "$f" | wc -l)" -ge 2
-          grep -q '25D366' "$f"
-          grep -q 'EA4335' "$f"
-          grep -q 'Final About contrast + contact icon fix' "$f"
-          grep -q 'googlegmail://co?to=shrumu7@gmail.com' "$f"
+          grep -q '<div class="brand" id="brand">Business360</div>' "$f"
+          grep -q 'Security-first startup' "$f"
+          grep -q 'function lockOverlay(){' "$f"
+          grep -q 'product-list-card' "$f"
+          grep -q 'product-list-name' "$f"
+          grep -q 'mailto:shrumu7@gmail.com' "$f"
           grep -q 'wa.me/8801795934394' "$f"
           grep -q 'Md Sahadul Hoque Rumu' "$f"
-          grep -q 'applyProductBg' "$f"
-          grep -q 'applyPanelBg' "$f"
-          grep -q 'applyButtonTheme' "$f"
-          grep -q 'applyAppBackground' "$f"
-          grep -q 'applyTheme' "$f"
-          echo "APK VERIFIED: $(ls -lh "$apk" | awk '{print $5}')"
+          echo "PACKAGED APK VERIFIED: $(ls -lh "$apk" | awk '{print $5}')"
 
-      - name: Upload verified APK
+      - name: Upload verified legacy APK
         uses: actions/upload-artifact@v4
         with:
-          name: Business360-Final-${{ github.run_number }}
+          name: Business360-Legacy-Verified-${{ github.run_number }}
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
