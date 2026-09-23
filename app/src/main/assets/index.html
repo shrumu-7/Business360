@@ -18,26 +18,22 @@
 @media(max-width:600px){#prodMobile{display:block}.tablewrap{display:none}}
 @media(max-width:520px){.g4,.g3{grid-template-columns:1fr}.title{align-items:flex-start;flex-direction:column}.cartrow{grid-template-columns:1fr 75px 105px 36px}.main{padding:10px}.card{padding:13px}}
 
-/* Mobile product list: keep product names readable on every product background */
-.product-list-card{background:#fff!important;color:#25233a!important;border:1px solid #dedde8;border-radius:18px;padding:14px 13px;margin-bottom:10px;box-shadow:0 4px 14px #00000010;overflow:hidden}
+/* Mobile product list: reference layout */
+.product-list-card{background:#fff!important;color:#4b4955!important;border:1px solid #e3e3e3;border-radius:0;padding:13px 12px 12px;margin-bottom:4px;box-shadow:0 2px 5px #00000018;overflow:hidden}
 .product-list-card *{box-sizing:border-box}
-.product-list-top{display:flex;align-items:center;gap:11px;min-width:0}
-.product-index{width:54px;height:54px;min-width:54px;border:2px solid #e2def2;border-radius:50%;display:grid;place-items:center;color:#4b4858;font-size:24px;font-weight:500;background:#fff}
+.product-list-top{display:flex;align-items:center;gap:12px;min-width:0}
+.product-index{width:56px;height:56px;min-width:56px;border:2px solid #e5e0f2;border-radius:50%;display:grid;place-items:center;color:#4d4b58;font-size:25px;font-weight:500;background:#fff}
 .product-list-main{min-width:0;flex:1}
-.product-list-name{font-size:18px;line-height:1.3;font-weight:750;color:#292638!important;word-break:break-word;overflow-wrap:anywhere}
-.product-list-meta{font-size:12px;line-height:1.35;color:#777487!important;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.product-more{background:transparent!important;color:#6e6b79!important;font-size:30px;line-height:1;padding:0 2px;width:28px;height:42px}
-.product-list-data{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0 8px;padding-left:65px}
+.product-list-name{font-size:20px;line-height:1.25;font-weight:500;color:#4b4955!important;word-break:break-word;overflow-wrap:anywhere}
+.product-list-meta,.product-list-actions{display:none!important}
+.product-more{background:transparent!important;color:#777581!important;font-size:34px;line-height:1;padding:0;width:34px;height:48px}
+.product-list-data{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0 0;padding-left:68px}
 .product-list-data>div{min-width:0}
-.product-list-data span{display:block;font-size:13px;color:#777487!important;white-space:nowrap}
-.product-list-data b{display:block;margin-top:2px;font-size:17px;color:#444150!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.product-list-stock{position:relative}
-.product-list-stock b{color:#27a34a!important}
-.product-list-stock em{font-style:normal;display:inline-grid;place-items:center;width:20px;height:20px;border:2px solid #35a653;border-radius:50%;color:#249441;font-size:12px;font-weight:900;margin-left:5px;vertical-align:middle}
-.product-list-actions{display:flex;gap:7px;flex-wrap:wrap;margin-left:65px;padding-top:8px;border-top:1px solid #eceaf1}
-.product-list-actions .btn{font-size:13px;padding:8px 11px}
-@media(max-width:520px){.product-list-card{padding:13px 10px}.product-list-name{font-size:16px}.product-list-data{padding-left:0;grid-template-columns:1fr 1fr 1fr}.product-list-actions{margin-left:0}.product-list-actions .btn{flex:1;min-width:0;padding:8px 7px}}
-
+.product-list-data span{display:block;font-size:17px;line-height:1.25;color:#777581!important;white-space:nowrap}
+.product-list-data b{display:block;margin-top:3px;font-size:17px;font-weight:500;color:#777581!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.product-list-stock b{color:#37a452!important}
+.product-list-stock em{font-style:normal;display:inline-grid;place-items:center;width:25px;height:25px;border:2px solid #765cf8;border-radius:50%;color:#765cf8;font-size:16px;font-weight:800;margin-left:7px;vertical-align:-3px}
+@media(max-width:520px){.product-list-card{padding:12px 10px 11px}.product-list-name{font-size:17px}.product-list-data{padding-left:0;gap:5px}.product-list-data span{font-size:13px}.product-list-data b{font-size:16px}.product-list-stock em{width:22px;height:22px;font-size:14px;margin-left:4px}}
 
 
 /* Product form save button: mobile-safe footer; never hidden behind the bottom navigation */
@@ -1198,7 +1194,7 @@ function productsPage(){
    document.getElementById('prodBody').innerHTML=arr.map(p=>`<tr><td><b class="clickable" onclick="openProductDetail('${p.id}')">${esc(p.name)}</b></td><td>${esc(p.barcode||'—')}</td><td>${esc(p.category||'—')}</td><td>${money(p.costPrice)}</td><td>${money(p.salePrice)}</td><td><span class="pill ${p.stock<=Number(p.reorder??db.settings.lowStock)?'warn':'ok'}">${p.stock} ${esc(p.unit||'pcs')}</span></td><td>${money(p.stock*p.costPrice)}</td><td><div class="toolbar"><button class="btn sm secondary" onclick="editProduct('${p.id}')">Edit</button><button class="btn sm gray" onclick="manualProductBackup('${p.id}')">💾 Backup</button><button class="btn sm stock-zero" onclick="zeroProductStock('${p.id}')">স্টক 0</button><button class="btn sm danger-outline" onclick="deleteProduct('${p.id}')">Delete</button></div></td></tr>`).join('')||`<tr><td colspan="8" class="empty">কোনো পণ্য পাওয়া যায়নি। উপরের “＋ নতুন পণ্য” চাপুন।</td></tr>`;
    document.getElementById('prodMobile').innerHTML=arr.map((p,i)=>`<div class="product-list-card" onclick="openProductDetail('${p.id}')">
   <div class="product-list-top">
-    <div class="product-index">${esc(String(p.id||i+1))}</div>
+    <div class="product-index">${esc((String(p.name||"").trim()[0]||"?").toUpperCase())}</div>
     <div class="product-list-main">
       <div class="product-list-name">${esc(p.name||'নাম নেই')}</div>
       <div class="product-list-meta">${esc(p.barcode||'Barcode নেই')} · ${esc(p.category||'Category নেই')}</div>
