@@ -37,9 +37,10 @@
 
 
 /* Product form save button: mobile-safe footer; never hidden behind the bottom navigation */
-.modalback{padding:10px 10px 92px!important;align-items:flex-start!important;overflow-y:auto!important}
+.modalback{z-index:200!important;padding:10px 10px 92px!important;align-items:flex-start!important;overflow-y:auto!important;overscroll-behavior:contain}
 .modal{width:min(700px,100%);max-height:calc(100dvh - 20px)!important;overflow-y:auto!important;overscroll-behavior:contain;padding-bottom:82px!important;scroll-padding-bottom:90px!important}
 .modal-save-btn{position:sticky!important;bottom:0!important;margin:18px 0 0!important;min-height:52px!important;width:100%!important;display:block!important;z-index:20!important;box-shadow:0 -10px 18px #ffffff!important}
+@media(max-width:900px){.modalback{z-index:200!important}}
 @media(max-width:600px){.modalback{padding:8px 8px 88px!important}.modal{max-height:calc(100dvh - 16px)!important;padding:15px 14px 86px!important}.modal-save-btn{min-height:54px!important;margin-top:16px!important;font-size:16px!important}}
 /* Product form save button: always fully visible and tappable on small screens */
 .modal-save-btn{display:block!important;width:100%!important;min-height:48px!important;margin:14px 0 2px!important;box-sizing:border-box!important;position:sticky!important;bottom:0!important;z-index:3!important;white-space:nowrap!important}
